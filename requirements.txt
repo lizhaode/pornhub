@@ -1,0 +1,2 @@
+scrapy
+js2py
