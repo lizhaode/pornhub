@@ -49,8 +49,10 @@ class AllChannel(scrapy.Spider):
         video_channel = response.css('div.usernameWrap').css('a.wl-link::text').extract_first()
         js = response.css('div.video-wrapper').css('#player').css('script').extract_first()
         prepare_js = js.split('<script type="text/javascript">')[1].split('loadScriptUniqueId')[0]
-        exec_js = 'function f(){' + prepare_js + 'if (quality_1080p !== undefined) {return quality_1080p;} else {' \
-                                                 'return quality_720p;}} '
+        exec_js = 'function f(){' + prepare_js + 'if (quality_2160p !== undefined) { return quality_2160p;} else if (' \
+                                                 'quality_1440p !== undefined) { return quality_1440p;} else if (' \
+                                                 'quality_1080p !== undefined) { return quality_1080p; } else { ' \
+                                                 'return quality_720p; } '
         f = js2py.eval_js(exec_js)
         video_url = f()
         if video_url is not None:
