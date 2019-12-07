@@ -53,7 +53,8 @@ class AllChannel(scrapy.Spider):
         exec_js = 'function f(){' + prepare_js + 'if (typeof (quality_2160p) != "undefined") { return quality_2160p; ' \
                                                  '} else if (typeof (quality_1440p) != "undefined") { return ' \
                                                  'quality_1440p;} else if (typeof (quality_1080p) != "undefined") {' \
-                                                 'return quality_1080p;} else {return quality_720p;}} '
+                                                 'return quality_1080p;} else if (typeof (quality_720p) != ' \
+                                                 '"undefined") { return quality_720p; } else { return ''; }} '
         f = js2py.eval_js(exec_js)
         video_url = f()
         if video_url is not None:
