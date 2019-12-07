@@ -3,6 +3,8 @@ import scrapy
 from scrapy.exceptions import NotSupported
 from scrapy.http.response.html import HtmlResponse
 from pornhub.items import PornhubItem
+from pornhub.lib.database import DataBase
+from pornhub.lib.entity.channelDO import Channel
 
 
 class AllChannel(scrapy.Spider):
@@ -58,5 +60,9 @@ class AllChannel(scrapy.Spider):
         f = js2py.eval_js(exec_js)
         video_url = f()
         if video_url is not None:
-            self.logger.warning('get video url:{0}'.format(video_url))
+            self.logger.warning('parse {0} video url:{1}'.format(video_title, video_url))
+            data_base = DataBase()
+            add_channel = Channel(title=video_title, channel=video_channel, url=video_url, parent_url=response.url)
+            data_base.add(add_channel)
+            data_base.commit_and_close()
             yield PornhubItem(file_urls=video_url, file_name=video_title, file_channel=video_channel)

@@ -1,2 +1,4 @@
+sqlalchemy
 scrapy
 js2py
+pymysql
