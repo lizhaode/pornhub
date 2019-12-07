@@ -61,8 +61,9 @@ class AllChannel(scrapy.Spider):
         video_url = f()
         if video_url is not None:
             self.logger.warning('parse {0} video url:{1}'.format(video_title, video_url))
-            data_base = DataBase()
-            add_channel = Channel(title=video_title, channel=video_channel, url=video_url, parent_url=response.url)
-            data_base.add(add_channel)
-            data_base.commit_and_close()
+            if self.settings.get('ENABLE_SQL'):
+                data_base = DataBase()
+                add_channel = Channel(title=video_title, channel=video_channel, url=video_url, parent_url=response.url)
+                data_base.add(add_channel)
+                data_base.commit_and_close()
             yield PornhubItem(file_urls=video_url, file_name=video_title, file_channel=video_channel)
