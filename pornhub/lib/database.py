@@ -1,8 +1,4 @@
-from sqlalchemy import create_engine
-from urllib.parse import quote_plus
-from sqlalchemy.orm.session import sessionmaker
-from pornhub.lib.entity.channelDO import Channel
-from typing import List
+import pymysql
 
 HOST = ''
 PORT = 3306
@@ -13,18 +9,29 @@ PASSWORD = ''
 class DataBase:
 
     def __init__(self):
-        self.connect_url = 'mysql+pymysql://{username}:{password}@{host}:{port}/{database}' \
-            .format(username=USER, password=quote_plus(PASSWORD), host=HOST, port=PORT, database='pornhub')
-        self.engine = create_engine(self.connect_url)
-        self.session_maker = sessionmaker(self.engine)
-        self.session = self.session_maker()
+        self.connect = pymysql.connect(host=HOST, port=PORT, user=USER, password=PASSWORD, db='pornhub',
+                                       charset='utf8mb4')
+        self.cursor = self.connect.cursor(pymysql.cursors.DictCursor)
 
-    def select_all_by_title(self, title: Channel.title) -> List[Channel]:
-        return self.session.query(Channel).filter_by(title=title).all()
+    def select_all_by_title(self, title: str) -> tuple:
+        sentence = 'SELECT * FROM `channel` WHERE `title` = %s'
+        self.cursor.execute(sentence, title)
+        return self.cursor.fetchall()
 
-    def add(self, channel: Channel) -> None:
-        self.session.add(channel)
+    def save(self, title: str, channel: str, url: str, parent_url: str) -> None:
+        sentence = 'INSERT INTO `channel` (`title`,`channel`,`url`,`parent_url`) VALUES(%s,%s,%s,%s)'
+        self.cursor.execute(sentence, (title, channel, url, parent_url))
+        self.connect.commit()
 
-    def commit_and_close(self):
-        self.session.commit()
-        self.session.close()
+    def update_start_down_timestamp_by_title(self, title: str) -> None:
+        sentence = 'UPDATE `channel` SET `start_down_timestamp` = CURRENT_TIMESTAMP WHERE `title` = %s'
+        self.cursor.execute(sentence, title)
+        self.connect.commit()
+
+    def update_end_down_timestamp_by_title(self, title: str) -> None:
+        sentence = 'UPDATE `channel` SET `end_down_timestamp` = CURRENT_TIMESTAMP WHERE `title` = %s'
+        self.cursor.execute(sentence, title)
+        self.connect.commit()
+
+    def close(self):
+        self.connect.close()
