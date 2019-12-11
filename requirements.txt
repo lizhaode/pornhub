@@ -1,3 +1,4 @@
+requests
 scrapy
 js2py
 pymysql

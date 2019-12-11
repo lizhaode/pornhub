@@ -83,7 +83,7 @@ DOWNLOADER_MIDDLEWARES = {
 # Configure item pipelines
 # See https://docs.scrapy.org/en/latest/topics/item-pipeline.html
 ITEM_PIPELINES = {
-    'pornhub.pipelines.DownloadVideoPipeline': 200,
+    'pornhub.pipelines.PornhubPipeline': 200,
 }
 
 # Enable and configure the AutoThrottle extension (disabled by default)
