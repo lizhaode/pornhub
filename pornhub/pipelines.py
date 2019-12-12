@@ -5,15 +5,25 @@
 # Don't forget to add your pipeline to the ITEM_PIPELINES setting
 # See: https://docs.scrapy.org/en/latest/topics/item-pipeline.html
 import os
-import requests
+from concurrent.futures import ThreadPoolExecutor
+
 import scrapy
 from scrapy.pipelines.files import FilesPipeline
-from pornhub.spiders.all_channel import AllChannel
+
 from pornhub.items import PornhubItem
+from pornhub.lib.DownloadService import DownService
+from pornhub.lib.DownloadService import sql_callback
 from pornhub.lib.database import DataBase
+from pornhub.spiders.all_channel import AllChannel
 
 
 class PornhubPipeline(object):
+
+    def __init__(self):
+        self.t = None
+
+    def open_spider(self, spider: AllChannel):
+        self.t = ThreadPoolExecutor(spider.settings.get('DOWN_THREAD'))
 
     def process_item(self, item, spider: AllChannel):
         if isinstance(item, PornhubItem):
@@ -28,20 +38,16 @@ class PornhubPipeline(object):
                 os.makedirs(file_path)
 
             file_name = item.get('file_name') + '.mp4'
-            setting_headers = spider.settings.get('DEFAULT_REQUEST_HEADERS')
+            setting_headers = spider.settings.get('DEFAULT_REQUEST_HEADERS').copy_to_dict()
             setting_headers.pop('Cookie')
             headers = {
                 'User-Agent': spider.settings.get('USER_AGENT')
             }
             headers.update(setting_headers)
-            response = requests.get(url=item.get('file_urls'), headers=headers, stream=True)
-            with open(file_path + os.sep + file_name, 'wb') as f:
-                for data in response.iter_content(chunk_size=1024):
-                    f.write(data)
+            f = self.t.submit(
+                DownService(spider, headers, item, item.get('file_urls'), file_path + os.sep + file_name).run)
             if spider.settings.get('ENABLE_SQL'):
-                data_base = DataBase()
-                data_base.update_end_down_timestamp_by_title(item.get('file_name'))
-                data_base.close()
+                f.add_done_callback(sql_callback)
 
 
 class DownloadVideoPipeline(FilesPipeline):

@@ -28,6 +28,7 @@ FILES_STORE = 'videos'
 
 CHANNEL_NUMBER = 1
 ENABLE_SQL = True
+DOWN_THREAD = 10
 
 # Crawl responsibly by identifying yourself (and your website) on the user-agent
 USER_AGENT = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_6) AppleWebKit/537.36 (KHTML, like Gecko) ' \
@@ -83,7 +84,7 @@ DOWNLOADER_MIDDLEWARES = {
 # Configure item pipelines
 # See https://docs.scrapy.org/en/latest/topics/item-pipeline.html
 ITEM_PIPELINES = {
-    'pornhub.pipelines.DownloadVideoPipeline': 200,
+    'pornhub.pipelines.PornhubPipeline': 200,
 }
 
 # Enable and configure the AutoThrottle extension (disabled by default)
