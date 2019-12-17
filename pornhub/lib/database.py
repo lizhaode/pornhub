@@ -23,15 +23,5 @@ class DataBase:
         self.cursor.execute(sentence, (title, channel, url, parent_url))
         self.connect.commit()
 
-    def update_start_down_timestamp_by_title(self, title: str) -> None:
-        sentence = 'UPDATE `channel` SET `start_down_timestamp` = CURRENT_TIMESTAMP WHERE `title` = %s'
-        self.cursor.execute(sentence, title)
-        self.connect.commit()
-
-    def update_end_down_timestamp_by_title(self, title: str) -> None:
-        sentence = 'UPDATE `channel` SET `end_down_timestamp` = CURRENT_TIMESTAMP WHERE `title` = %s'
-        self.cursor.execute(sentence, title)
-        self.connect.commit()
-
     def close(self):
         self.connect.close()

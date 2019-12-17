@@ -63,6 +63,11 @@ class AllChannel(scrapy.Spider):
             self.logger.warning('parse {0} video url:{1}'.format(video_title, video_url))
             if self.settings.get('ENABLE_SQL'):
                 data_base = DataBase()
-                data_base.save(video_title, video_channel, video_url, response.url)
-                data_base.close()
+                result = data_base.select_all_by_title(video_title)
+                if len(result) != 0:
+                    for line in result:
+                        self.logger.error('has duplicate record: %s', line)
+                else:
+                    data_base.save(video_title, video_channel, video_url, response.url)
+                    data_base.close()
             yield PornhubItem(file_urls=video_url, file_name=video_title, file_channel=video_channel)

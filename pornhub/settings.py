@@ -20,15 +20,12 @@ RETRY_TIMES = 10
 RETRY_HTTP_CODES = [500, 503, 504, 400, 403, 404, 408]
 DOWNLOAD_TIMEOUT = 3600
 
-DOWNLOAD_MAXSIZE = 0
-DOWNLOAD_WARNSIZE = 0
-DOWNLOAD_FAIL_ON_DATALOSS = False
-
 FILES_STORE = 'videos'
 
+ARIA_TOKEN = 'lizhao'
+ARIA_PATH_PREFIX = '/opt/drive'
 CHANNEL_NUMBER = 1
 ENABLE_SQL = True
-DOWN_THREAD = 10
 
 # Crawl responsibly by identifying yourself (and your website) on the user-agent
 USER_AGENT = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_6) AppleWebKit/537.36 (KHTML, like Gecko) ' \
