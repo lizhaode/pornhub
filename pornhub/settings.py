@@ -25,8 +25,8 @@ DOWNLOAD_TIMEOUT = 3600
 
 FILES_STORE = 'videos'
 
-ARIA_TOKEN = 'lizhao'
-ARIA_PATH_PREFIX = '/opt/drive'
+ARIA_TOKEN = ''
+ARIA_PATH_PREFIX = '/opt'
 CHANNEL_NUMBER = 1
 ENABLE_SQL = True
 
