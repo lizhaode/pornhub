@@ -14,7 +14,10 @@ BOT_NAME = 'pornhub'
 SPIDER_MODULES = ['pornhub.spiders']
 NEWSPIDER_MODULE = 'pornhub.spiders'
 
-LOG_LEVEL = 'WARNING'
+LOG_FILE = 'stdout.log'
+LOG_LEVEL = 'INFO'
+LOG_FORMAT = '%(asctime)s %(levelname)s %(thread)d --- [%(name)s-%(threadName)s] %(message)s'
+LOG_SHORT_NAMES = True
 RETRY_ENABLED = True
 RETRY_TIMES = 10
 RETRY_HTTP_CODES = [500, 503, 504, 400, 403, 404, 408]

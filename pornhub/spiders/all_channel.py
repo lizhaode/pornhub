@@ -34,12 +34,12 @@ class AllChannel(scrapy.Spider):
     def parse(self, response: HtmlResponse):
         videos_list = response.css('ul.videos.row-5-thumbs.videosGridWrapper')
         video_css = videos_list.css('span.title')
-        self.logger.warning('fetch %s videos', len(video_css))
+        self.logger.info('fetch %s videos', len(video_css))
         for item in video_css:  # type: SelectorList
             video_sub_link = item.css('a::attr(href)').extract_first()
             video_url = response.urljoin(video_sub_link)
             title = item.css('a::text').extract_first()
-            self.logger.warning('send [%s] to parse real video', title)
+            self.logger.info('send [%s] to parse real video', title)
             yield scrapy.Request(video_url, callback=self.video_page)
 
         # determine has next page
@@ -63,7 +63,7 @@ class AllChannel(scrapy.Spider):
         f = js2py.eval_js(exec_js)
         video_url = f()
         if video_url is not None:
-            self.logger.warning('parse [%s] success, url: %s', video_title, video_url)
+            self.logger.info('parse [%s] success, url: %s', video_title, video_url)
             if self.settings.get('ENABLE_SQL'):
                 data_base = DataBase()
                 result = data_base.select_all_by_title(video_title)

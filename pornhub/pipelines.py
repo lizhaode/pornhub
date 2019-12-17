@@ -27,7 +27,7 @@ class PornhubPipeline(object):
                 'id': '0',
                 'params': [token, [item['file_urls']], {'out': file_name, 'dir': file_path}]
             }
-            spider.logger.warning('send to aria2 rpc, args %s', aria_data)
+            spider.logger.info('send to aria2 rpc, args %s', aria_data)
             response = requests.post(url=base_url, json=aria_data)
             if response.status_code != 200:
                 raise ValueError('request aria2 rpc error', response.json())
@@ -37,7 +37,7 @@ class DownloadVideoPipeline(FilesPipeline):
 
     def get_media_requests(self, item, info):
         if isinstance(item, PornhubItem):
-            info.spider.logger.warning('接到下载任务，文件名：{0}\n地址：{1}\n'.format(item['file_name'] + '.mp4', item['file_urls']))
+            info.spider.logger.info('接到下载任务，文件名：{0}\n地址：{1}\n'.format(item['file_name'] + '.mp4', item['file_urls']))
             return scrapy.Request(url=item['file_urls'], meta=item)
 
     def file_path(self, request, response=None, info=None):
