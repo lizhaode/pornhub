@@ -4,6 +4,8 @@
 #
 # Don't forget to add your pipeline to the ITEM_PIPELINES setting
 # See: https://docs.scrapy.org/en/latest/topics/item-pipeline.html
+import os
+
 import requests
 import scrapy
 from scrapy.pipelines.files import FilesPipeline
@@ -19,6 +21,9 @@ class PornhubPipeline(object):
             file_path = spider.settings.get('ARIA_PATH_PREFIX') + '/' + spider.settings.get(
                 'FILES_STORE') + '/' + item.get('file_channel')
             file_name = item.get('file_name') + '.mp4'
+            # check file name contains file separator like \ or /
+            if os.sep in file_name:
+                file_name = file_name.replace(os.sep, '|')
             base_url = 'http://127.0.0.1:8800/jsonrpc'
             token = 'token:' + spider.settings.get('ARIA_TOKEN')
             aria_data = {
