@@ -40,7 +40,7 @@ class AllChannel(scrapy.Spider):
             video_url = response.urljoin(video_sub_link)
             title = item.css('a::text').extract_first()
             self.logger.info('send [%s] to parse real video', title)
-            yield scrapy.Request(video_url, callback=self.video_page)
+            yield scrapy.Request(video_url, callback=self.video_page, priority=100)
 
         # determine has next page
         next_page_li = response.css('li.page_next')
