@@ -61,6 +61,7 @@ class PornhubPipeline(object):
                     requests.post(url=base_url, json=remove_data)
                     retry_resp = requests.post(url=base_url, json=aria_data)
                     gid = retry_resp.json().get('result')
+                    retry_times += 1
                 elif status == 'complete':
                     break
 
