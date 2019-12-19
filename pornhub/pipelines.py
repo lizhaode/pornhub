@@ -1,10 +1,10 @@
-# -*- coding: utf-8 -*-
-
 # Define your item pipelines here
 #
 # Don't forget to add your pipeline to the ITEM_PIPELINES setting
 # See: https://docs.scrapy.org/en/latest/topics/item-pipeline.html
 import os
+import sys
+import time
 
 import requests
 import scrapy
@@ -34,8 +34,35 @@ class PornhubPipeline(object):
             }
             spider.logger.info('send to aria2 rpc, args %s', aria_data)
             response = requests.post(url=base_url, json=aria_data)
-            if response.status_code != 200:
-                raise ValueError('request aria2 rpc error', response.json())
+            gid = response.json().get('result')
+
+            retry_times = 0
+            while True:
+                if retry_times > spider.settings.get('RETRY_TIMES'):
+                    spider.logger.error('over retry times, [%s] download fail', file_name)
+                    break
+                time.sleep(5)
+                status_data = {
+                    'jsonrpc': '2.0',
+                    'method': 'aria2.tellStatus',
+                    'id': '0',
+                    'params': [token, gid, ['status']]
+                }
+                status_resp = requests.post(url=base_url, json=status_data)
+                status = status_resp.json().get('result').get('status')
+                if status == 'error':
+                    spider.logger.info('download error, remove and retry')
+                    remove_data = {
+                        'jsonrpc': '2.0',
+                        'method': 'aria2.removeDownloadResult',
+                        'id': '0',
+                        'params': [token, gid]
+                    }
+                    requests.post(url=base_url, json=remove_data)
+                    retry_resp = requests.post(url=base_url, json=aria_data)
+                    gid = retry_resp.json().get('result')
+                elif status == 'complete':
+                    break
 
 
 class DownloadVideoPipeline(FilesPipeline):
