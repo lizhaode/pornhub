@@ -23,7 +23,7 @@ class MyFollow(scrapy.Spider):
         li_tag_list = response.css('div.sectionWrapper').css('ul#moreData').css('li')
         for item in li_tag_list:  # type: SelectorList
             sub_link = item.css('a.usernameLink').css('a::attr(href)').extract_first() + '/videos/upload'
-            yield scrapy.Request('https://www.pornhubpremium.com' + sub_link, callback=self.model_page)
+            yield scrapy.Request('https://www.pornhubpremium.com' + sub_link, callback=self.model_page, priority=10)
 
     def model_page(self, response: HtmlResponse):
         video_sum_element = response.css('div.showingInfo').css('span.totalSpan')
@@ -47,7 +47,7 @@ class MyFollow(scrapy.Spider):
         else:
             # url not contains page and num > 1 means need load all videos
             new_link = '{0}?page={1}'.format(response.url, page_number)
-            yield scrapy.Request(new_link, callback=self.model_page)
+            yield scrapy.Request(new_link, callback=self.model_page, priority=10)
 
     def video_page(self, response: HtmlResponse):
         video_title = response.css('h1.title').css('span::text').extract_first()
