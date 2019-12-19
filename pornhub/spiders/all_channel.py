@@ -11,6 +11,10 @@ from pornhub.lib.database import DataBase
 class AllChannel(scrapy.Spider):
     name = 'all'
 
+    def __init__(self, name=None, **kwargs):
+        super().__init__(name, **kwargs)
+        self.data_base = DataBase()
+
     def start_requests(self):
         channel_number = self.settings.get('CHANNEL_NUMBER')
         channel_list = []
@@ -65,12 +69,10 @@ class AllChannel(scrapy.Spider):
         if video_url is not None:
             self.logger.info('parse [%s] success, url: %s', video_title, video_url)
             if self.settings.get('ENABLE_SQL'):
-                data_base = DataBase()
-                result = data_base.select_all_by_title_channel(video_title)
+                result = self.data_base.select_all_by_title_channel(video_title)
                 if len(result) != 0:
                     for line in result:
                         self.logger.error('has duplicate record: %s', line)
                 else:
-                    data_base.save_channel(video_title, video_channel, video_url, response.url)
-                    data_base.close()
+                    self.data_base.save_channel(video_title, video_channel, video_url, response.url)
             yield PornhubItem(file_urls=video_url, file_name=video_title, file_channel=video_channel)
