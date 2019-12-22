@@ -14,9 +14,11 @@ class MyFollow(scrapy.Spider):
 
     def __init__(self, name=None, **kwargs):
         super().__init__(name, **kwargs)
-        self.data_base = DataBase()
+        self.data_base = None
 
     def start_requests(self):
+        if self.settings.get('ENABLE_SQL'):
+            self.data_base = DataBase()
         yield scrapy.Request('https://www.pornhubpremium.com/users/daiqiangbudainiu/subscriptions')
 
     def parse(self, response: HtmlResponse):

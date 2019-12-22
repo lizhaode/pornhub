@@ -79,12 +79,12 @@ class PornhubPipeline(object):
             'params': [token, gid, ['status', 'errorCode']]
         }
         response = requests.post(url=self.base_url, json=status_data)
-        status = response.json().get('result')
-        result['status'] = status
-        if status == 'error':
-            result['extra'] = response.json().get('result').get('errorCode')
+        aria_dict = response.json().get('result')
+        result['status'] = aria_dict.get('status')
+        if result['status'] == 'error':
+            result['extra'] = aria_dict.get('errorCode')
             return result
-        elif status == 'complete':
+        elif result['status'] == 'complete':
             return result
         else:
             return result
