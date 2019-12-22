@@ -42,38 +42,31 @@ class PornhubPipeline(object):
             log.info('send to aria2 rpc, args %s', aria_data)
             response = requests.post(url=self.base_url, json=aria_data)
             gid = response.json().get('result')
-            retry_times = spider.settings.get('RETRY_TIMES')
 
-            pool = ThreadPoolExecutor(1)
-            pool.submit(self.check_download_success, retry_times, item, file_name, token, gid)
-            pool.shutdown(False)
-
-    def check_and_log_download(self, retry_times_config: int, item: PornhubItem, file_name: str, token: str, gid: str,
-                               aria_data: dict) -> None:
-        retry_times = 0
-        while True:
-            if retry_times > retry_times_config:
-                log.error('over retry times, [%s] download fail', file_name)
-                break
-            time.sleep(5)
-            result = self.check_download_success(gid, token)
-            if result.get('status') == 'complete':
-                log.info('%s download success', item.get('file_name'))
-                break
-            elif result.get('status') == 'error':
-                fail_code = result.get('extra')
-                self.remove_download(gid, token)
-                if fail_code == 13:
-                    log.info('%s download fail, because file is already existed', item.get('file_name'))
+            retry_times = 0
+            while True:
+                if retry_times > spider.settings.get('RETRY_TIMES'):
+                    log.error('over retry times, [%s] download fail', file_name)
                     break
-                elif fail_code == 22:
-                    log.info('%s download fail, because HTTP header error, maybe link is expired or '
-                             'Content-Length is the same as real')
+                time.sleep(3)
+                result = self.check_download_success(gid, token)
+                if result.get('status') == 'complete':
+                    log.info('%s download success', item.get('file_name'))
                     break
-                log.info('%s download fail, fail code is: %s', item.get('file_name'), fail_code)
-                retry_resp = requests.post(url=self.base_url, json=aria_data)
-                gid = retry_resp.json().get('result')
-                retry_times += 1
+                elif result.get('status') == 'error':
+                    fail_code = result.get('extra')
+                    self.remove_download(gid, token)
+                    if fail_code == 13:
+                        log.info('%s download fail, because file is already existed', item.get('file_name'))
+                        break
+                    elif fail_code == 22:
+                        log.info('%s download fail, because HTTP header error, maybe link is expired or '
+                                 'Content-Length is the same as real')
+                        break
+                    log.info('%s download fail, fail code is: %s', item.get('file_name'), fail_code)
+                    retry_resp = requests.post(url=self.base_url, json=aria_data)
+                    gid = retry_resp.json().get('result')
+                    retry_times += 1
 
     def check_download_success(self, gid: str, token: str) -> dict:
         result = {
