@@ -15,6 +15,9 @@ from pornhub.spiders.all_channel import AllChannel
 
 log = logging.getLogger(__name__)
 
+request_log = logging.getLogger('requests')
+request_log.setLevel(logging.ERROR)
+
 
 class PornhubPipeline(object):
     base_url = 'http://127.0.0.1:8800/jsonrpc'
