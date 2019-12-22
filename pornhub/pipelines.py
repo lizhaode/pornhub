@@ -2,8 +2,8 @@
 #
 # Don't forget to add your pipeline to the ITEM_PIPELINES setting
 # See: https://docs.scrapy.org/en/latest/topics/item-pipeline.html
+import logging
 import os
-import sys
 import time
 
 import requests
@@ -13,8 +13,11 @@ from scrapy.pipelines.files import FilesPipeline
 from pornhub.items import PornhubItem
 from pornhub.spiders.all_channel import AllChannel
 
+log = logging.getLogger(__name__)
+
 
 class PornhubPipeline(object):
+    base_url = 'http://127.0.0.1:8800/jsonrpc'
 
     def process_item(self, item, spider: AllChannel):
         if isinstance(item, PornhubItem):
@@ -24,7 +27,7 @@ class PornhubPipeline(object):
             # check file name contains file separator like \ or /
             if os.sep in file_name:
                 file_name = file_name.replace(os.sep, '|')
-            base_url = 'http://127.0.0.1:8800/jsonrpc'
+
             token = 'token:' + spider.settings.get('ARIA_TOKEN')
             aria_data = {
                 'jsonrpc': '2.0',
@@ -32,38 +35,66 @@ class PornhubPipeline(object):
                 'id': '0',
                 'params': [token, [item['file_urls']], {'out': file_name, 'dir': file_path}]
             }
-            spider.logger.info('send to aria2 rpc, args %s', aria_data)
-            response = requests.post(url=base_url, json=aria_data)
+            log.info('send to aria2 rpc, args %s', aria_data)
+            response = requests.post(url=self.base_url, json=aria_data)
             gid = response.json().get('result')
 
             retry_times = 0
             while True:
                 if retry_times > spider.settings.get('RETRY_TIMES'):
-                    spider.logger.error('over retry times, [%s] download fail', file_name)
+                    log.error('over retry times, [%s] download fail', file_name)
                     break
                 time.sleep(5)
-                status_data = {
-                    'jsonrpc': '2.0',
-                    'method': 'aria2.tellStatus',
-                    'id': '0',
-                    'params': [token, gid, ['status']]
-                }
-                status_resp = requests.post(url=base_url, json=status_data)
-                status = status_resp.json().get('result').get('status')
-                if status == 'error':
-                    spider.logger.info('download error, remove and retry')
-                    remove_data = {
-                        'jsonrpc': '2.0',
-                        'method': 'aria2.removeDownloadResult',
-                        'id': '0',
-                        'params': [token, gid]
-                    }
-                    requests.post(url=base_url, json=remove_data)
-                    retry_resp = requests.post(url=base_url, json=aria_data)
-                    gid = retry_resp.json().get('result')
-                    retry_times += 1
-                elif status == 'complete':
+                result = self.check_download_success(gid, token)
+                if result.get('status') == 'complete':
+                    log.info('%s download success', item.get('file_name'))
                     break
+                elif result.get('status') == 'error':
+                    fail_code = result.get('extra')
+                    self.remove_download(gid, token)
+                    if fail_code == 13:
+                        log.info('%s download fail, because file is already existed', item.get('file_name'))
+                        break
+                    elif fail_code == 22:
+                        log.info('%s download fail, because HTTP header error, maybe link is expired or '
+                                 'Content-Length is the same as real')
+                        break
+                    log.info('%s download fail, fail code is: %s', item.get('file_name'), fail_code)
+                    retry_resp = requests.post(url=self.base_url, json=aria_data)
+                    gid = retry_resp.json().get('result')
+
+    def check_download_success(self, gid: str, token: str) -> dict:
+        result = {
+            'status': 'downloading',
+            'extra': ''
+        }
+        status_data = {
+            'jsonrpc': '2.0',
+            'method': 'aria2.tellStatus',
+            'id': '0',
+            'params': [token, gid, ['status', 'errorCode']]
+        }
+        response = requests.post(url=self.base_url, json=status_data)
+        status = response.json().get('result')
+        result['status'] = status
+        if status == 'error':
+            result['extra'] = response.json().get('result').get('errorCode')
+            return result
+        elif status == 'complete':
+            return result
+        else:
+            return result
+
+    def remove_download(self, gid: str, token: str) -> None:
+        remove_data = {
+            'jsonrpc': '2.0',
+            'method': 'aria2.removeDownloadResult',
+            'id': '0',
+            'params': [token, gid]
+        }
+        response = requests.post(url=self.base_url, json=remove_data)
+        if response.status_code != 200 and response.json().get('result') != 'OK':
+            raise ValueError('remove download from aria2 fail')
 
 
 class DownloadVideoPipeline(FilesPipeline):
