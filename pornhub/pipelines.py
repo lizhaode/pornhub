@@ -65,6 +65,7 @@ class PornhubPipeline(object):
                     log.info('%s download fail, fail code is: %s', item.get('file_name'), fail_code)
                     retry_resp = requests.post(url=self.base_url, json=aria_data)
                     gid = retry_resp.json().get('result')
+                    retry_times += 1
 
     def check_download_success(self, gid: str, token: str) -> dict:
         result = {
