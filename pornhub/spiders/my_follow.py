@@ -36,7 +36,6 @@ class MyFollow(scrapy.Spider):
         # url contains page means load all videos || num == 1, start parse
         if 'page' in response.url or page_number == 1:
             li_list = response.css('div.videoUList').css('ul').css('li')
-            result = []
             for li_tag in li_list:  # type: SelectorList
                 a_tag = li_tag.css('span.title').css('a')
                 video_title = a_tag.css('::text').extract_first()
