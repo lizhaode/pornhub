@@ -4,8 +4,6 @@
 # See: https://docs.scrapy.org/en/latest/topics/item-pipeline.html
 import logging
 import os
-import time
-from concurrent.futures import ThreadPoolExecutor
 
 import requests
 import scrapy
@@ -40,32 +38,32 @@ class PornhubPipeline(object):
                 'params': [token, [item['file_urls']], {'out': file_name, 'dir': file_path}]
             }
             log.info('send to aria2 rpc, args %s', aria_data)
-            response = requests.post(url=self.base_url, json=aria_data)
-            gid = response.json().get('result')
+            requests.post(url=self.base_url, json=aria_data)
+            # gid = response.json().get('result')
 
-            retry_times = 0
-            while True:
-                if retry_times > spider.settings.get('RETRY_TIMES'):
-                    log.error('over retry times, [%s] download fail', file_name)
-                    break
-                time.sleep(3)
-                result = self.check_download_success(gid, token)
-                if result.get('status') == 'complete':
-                    log.info('%s download success', item.get('file_name'))
-                    break
-                elif result.get('status') == 'error':
-                    fail_code = result.get('error_code')
-                    fail_message = result.get('error_message')
-                    self.remove_download(gid, token)
-                    log.info('%s download fail, fail code is: %s, message is: %s', item.get('file_name'), fail_code,
-                             fail_message)
-                    if fail_code == '13':
-                        break
-                    elif fail_code == '22':
-                        break
-                    retry_resp = requests.post(url=self.base_url, json=aria_data)
-                    gid = retry_resp.json().get('result')
-                    retry_times += 1
+            # retry_times = 0
+            # while True:
+            #     if retry_times > spider.settings.get('RETRY_TIMES'):
+            #         log.error('over retry times, [%s] download fail', file_name)
+            #         break
+            #     time.sleep(3)
+            #     result = self.check_download_success(gid, token)
+            #     if result.get('status') == 'complete':
+            #         log.info('%s download success', item.get('file_name'))
+            #         break
+            #     elif result.get('status') == 'error':
+            #         fail_code = result.get('error_code')
+            #         fail_message = result.get('error_message')
+            #         self.remove_download(gid, token)
+            #         log.info('%s download fail, fail code is: %s, message is: %s', item.get('file_name'), fail_code,
+            #                  fail_message)
+            #         if fail_code == '13':
+            #             break
+            #         elif fail_code == '22':
+            #             break
+            #         retry_resp = requests.post(url=self.base_url, json=aria_data)
+            #         gid = retry_resp.json().get('result')
+            #         retry_times += 1
 
     def check_download_success(self, gid: str, token: str) -> dict:
         result = {
