@@ -16,7 +16,7 @@ NEWSPIDER_MODULE = 'pornhub.spiders'
 
 LOG_FILE = 'stdout.log'
 LOG_LEVEL = 'INFO'
-LOG_FORMAT = '%(asctime)s %(levelname)s %(thread)d --- [%(name)s-%(threadName)s] %(message)s'
+LOG_FORMAT = '%(asctime)s %(levelname)s --- [%(name)s-%(threadName)s] %(message)s'
 LOG_SHORT_NAMES = True
 RETRY_ENABLED = True
 RETRY_TIMES = 10
