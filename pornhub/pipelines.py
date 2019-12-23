@@ -54,16 +54,15 @@ class PornhubPipeline(object):
                     log.info('%s download success', item.get('file_name'))
                     break
                 elif result.get('status') == 'error':
-                    fail_code = result.get('extra')
+                    fail_code = result.get('error_code')
+                    fail_message = result.get('error_message')
                     self.remove_download(gid, token)
-                    if fail_code == 13:
-                        log.info('%s download fail, because file is already existed', item.get('file_name'))
+                    log.info('%s download fail, fail code is: %s, message is: %s', item.get('file_name'), fail_code,
+                             fail_message)
+                    if fail_code == '13':
                         break
-                    elif fail_code == 22:
-                        log.info('%s download fail, because HTTP header error, maybe link is expired or '
-                                 'Content-Length is the same as real')
+                    elif fail_code == '22':
                         break
-                    log.info('%s download fail, fail code is: %s', item.get('file_name'), fail_code)
                     retry_resp = requests.post(url=self.base_url, json=aria_data)
                     gid = retry_resp.json().get('result')
                     retry_times += 1
@@ -71,19 +70,21 @@ class PornhubPipeline(object):
     def check_download_success(self, gid: str, token: str) -> dict:
         result = {
             'status': 'downloading',
-            'extra': ''
+            'error_code': '',
+            'error_message': ''
         }
         status_data = {
             'jsonrpc': '2.0',
             'method': 'aria2.tellStatus',
             'id': '0',
-            'params': [token, gid, ['status', 'errorCode']]
+            'params': [token, gid, ['status', 'errorCode', 'errorMessage']]
         }
         response = requests.post(url=self.base_url, json=status_data)
         aria_dict = response.json().get('result')
         result['status'] = aria_dict.get('status')
         if result['status'] == 'error':
-            result['extra'] = aria_dict.get('errorCode')
+            result['error_code'] = aria_dict.get('errorCode')
+            result['error_message'] = aria_dict.get('errorMessage')
             return result
         elif result['status'] == 'complete':
             return result
