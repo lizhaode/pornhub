@@ -24,7 +24,7 @@ class MyFollow(scrapy.Spider):
     def parse(self, response: HtmlResponse):
         li_tag_list = response.css('div.sectionWrapper').css('ul#moreData').css('li')
         for item in li_tag_list:  # type: SelectorList
-            sub_link = item.css('a.usernameLink').css('a::attr(href)').extract_first() + '/videos/upload'
+            sub_link = item.css('a.usernameLink').css('a::attr(href)').get() + '/videos/upload'
             yield scrapy.Request('https://www.pornhubpremium.com' + sub_link, callback=self.model_page, priority=10)
 
     def model_page(self, response: HtmlResponse):
@@ -32,7 +32,7 @@ class MyFollow(scrapy.Spider):
         # some porn star hasn't show video number
         page_number = 1
         if video_sum_element:
-            video_sum = video_sum_element.css('::text').extract_first()
+            video_sum = video_sum_element.css('::text').get()
             sum_number = int(video_sum)
             page_number = math.ceil(sum_number / 40)
         # url contains page means load all videos || num == 1, start parse
@@ -40,8 +40,8 @@ class MyFollow(scrapy.Spider):
             li_list = response.css('div.videoUList').css('ul').css('li')
             for li_tag in li_list:  # type: SelectorList
                 a_tag = li_tag.css('span.title').css('a')
-                video_title = a_tag.css('::text').extract_first()
-                video_url = a_tag.css('::attr(href)').extract_first()
+                video_title = a_tag.css('::text').get()
+                video_url = a_tag.css('::attr(href)').get()
                 real_url = 'https://www.pornhubpremium.com' + video_url
                 self.logger.info('send [%s] ,url: %s', video_title, video_url)
                 yield scrapy.Request(real_url, callback=self.video_page, priority=100)
@@ -51,19 +51,18 @@ class MyFollow(scrapy.Spider):
             yield scrapy.Request(new_link, callback=self.model_page, priority=10)
 
     def video_page(self, response: HtmlResponse):
-        video_title = response.css('h1.title').css('span::text').extract_first()
+        video_title = response.css('h1.title').css('span::text').get()
         video_channel = response.css('div.video-actions-container').css('div.usernameWrap.clearfix').css(
-            'a::text').extract_first()
-        js = response.css('div.video-wrapper').css('#player').css('script').extract_first()
+            'a::text').get()
+        js = response.css('div.video-wrapper').css('#player').css('script').get()
+        data_video_id = response.css('div.video-wrapper').css('#player::attr(data-video-id)').get()
         prepare_js = js.split('<script type="text/javascript">')[1].split('loadScriptUniqueId')[0]
-        exec_js = 'function f(){' + prepare_js + 'if (typeof (quality_2160p) != "undefined") { return quality_2160p; ' \
-                                                 '} else if (typeof (quality_1440p) != "undefined") { return ' \
-                                                 'quality_1440p;} else if (typeof (quality_1080p) != "undefined") {' \
-                                                 'return quality_1080p;} else if (typeof (quality_720p) != ' \
-                                                 '"undefined") { return quality_720p; } else { return ''; }} '
-        f = js2py.eval_js(exec_js)
-        video_url = f()
-        if video_url is not None:
+        exec_js = '{0}\nqualityItems_{1};'.format(prepare_js, data_video_id)
+        js_result = js2py.eval_js(exec_js)  # type: js2py.base.JsObjectWrapper
+        quality_items = js_result.to_list()  # type: list
+        quality = quality_items[-1]['text'].split('p')[0]
+        if int(quality) >= 720:
+            video_url = quality_items[-1]['url']
             self.logger.info('parse [%s] success, url: %s', video_title, video_url)
             if self.settings.get('ENABLE_SQL'):
                 result = self.data_base.select_all_by_title_my_follow(video_title)

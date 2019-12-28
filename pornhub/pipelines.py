@@ -106,7 +106,7 @@ class DownloadVideoPipeline(FilesPipeline):
 
     def get_media_requests(self, item, info):
         if isinstance(item, PornhubItem):
-            info.spider.logger.info('接到下载任务，文件名：{0}\n地址：{1}\n'.format(item['file_name'] + '.mp4', item['file_urls']))
+            info.spider.logger.info('receive download task, name: {0}'.format(item['file_name']))
             return scrapy.Request(url=item['file_urls'], meta=item)
 
     def file_path(self, request, response=None, info=None):

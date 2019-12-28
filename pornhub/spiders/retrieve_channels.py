@@ -18,8 +18,8 @@ class Channel(scrapy.Spider):
         channel_list = []
         description_list = response.css('div.descriptionContainer')
         for item in description_list:
-            title = item.css('a::text').extract_first()
-            sub_link = item.css('a::attr(href)').extract_first()
+            title = item.css('a::text').get()
+            sub_link = item.css('a::attr(href)').get()
             self.logger.info('get channel:{0} ,link is:{1}'.format(title, sub_link))
             save_name = sub_link.split('/')[2]
             channel_list.append(save_name + '\n')
@@ -27,7 +27,7 @@ class Channel(scrapy.Spider):
         # determine has next page
         next_page_li = response.css('li.page_next')
         if next_page_li:
-            next_page_sub_link = next_page_li.css('a::attr(href)').extract_first()
+            next_page_sub_link = next_page_li.css('a::attr(href)').get()
             next_page_url = response.urljoin(next_page_sub_link)
             self.logger.info('has next page, url is:{0}'.format(next_page_url))
             yield scrapy.Request(next_page_url)

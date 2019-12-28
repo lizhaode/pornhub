@@ -22,6 +22,9 @@ RETRY_ENABLED = True
 RETRY_TIMES = 10
 RETRY_HTTP_CODES = [500, 503, 504, 400, 403, 404, 408]
 DOWNLOAD_TIMEOUT = 3600
+DOWNLOAD_MAXSIZE = 0
+DOWNLOAD_WARNSIZE = 0
+DOWNLOAD_FAIL_ON_DATALOSS = False
 
 FILES_STORE = 'videos'
 
@@ -38,15 +41,15 @@ USER_AGENT = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_6) AppleWebKit/537.36
 ROBOTSTXT_OBEY = False
 
 # Configure maximum concurrent requests performed by Scrapy (default: 16)
-# CONCURRENT_REQUESTS = 32
+CONCURRENT_REQUESTS = 5
 
 # Configure a delay for requests for the same website (default: 0)
 # See https://docs.scrapy.org/en/latest/topics/settings.html#download-delay
 # See also autothrottle settings and docs
-DOWNLOAD_DELAY = 3
+DOWNLOAD_DELAY = 1
 # The download delay setting will honor only one of:
-# CONCURRENT_REQUESTS_PER_DOMAIN = 16
-# CONCURRENT_REQUESTS_PER_IP = 16
+CONCURRENT_REQUESTS_PER_DOMAIN = 5
+CONCURRENT_REQUESTS_PER_IP = 5
 
 # Disable cookies (enabled by default)
 COOKIES_ENABLED = False
@@ -84,7 +87,7 @@ DOWNLOADER_MIDDLEWARES = {
 # Configure item pipelines
 # See https://docs.scrapy.org/en/latest/topics/item-pipeline.html
 ITEM_PIPELINES = {
-    'pornhub.pipelines.PornhubPipeline': 200,
+    'pornhub.pipelines.DownloadVideoPipeline': 200,
 }
 
 # Enable and configure the AutoThrottle extension (disabled by default)
