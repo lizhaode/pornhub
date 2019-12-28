@@ -106,6 +106,9 @@ class DownloadVideoPipeline(FilesPipeline):
 
     def get_media_requests(self, item, info):
         if isinstance(item, PornhubItem):
+            # check file name contains file separator like \ or /
+            if os.sep in item['file_name']:
+                item['file_name'] = item['file_name'].replace(os.sep, '|')
             info.spider.logger.info('receive download task, name: {0}'.format(item['file_name']))
             return scrapy.Request(url=item['file_urls'], meta=item)
 
