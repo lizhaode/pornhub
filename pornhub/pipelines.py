@@ -110,7 +110,7 @@ class DownloadVideoPipeline(FilesPipeline):
             if os.sep in item['file_name']:
                 item['file_name'] = item['file_name'].replace(os.sep, '|')
             info.spider.logger.info('receive download task, name: {0}'.format(item['file_name']))
-            return scrapy.Request(url=item['file_urls'], meta=item)
+            return scrapy.Request(url=item['file_urls'], meta=item, priority=200)
 
     def file_path(self, request, response=None, info=None):
         down_name = request.meta['file_channel'] + '/' + request.meta['file_name'] + '.mp4'
