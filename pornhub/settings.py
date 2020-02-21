@@ -31,7 +31,7 @@ FILES_STORE = 'videos'
 ARIA_TOKEN = ''
 ARIA_PATH_PREFIX = '/opt'
 CHANNEL_NUMBER = 1
-ENABLE_SQL = True
+ENABLE_SQL = False
 
 # Crawl responsibly by identifying yourself (and your website) on the user-agent
 USER_AGENT = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_6) AppleWebKit/537.36 (KHTML, like Gecko) ' \
