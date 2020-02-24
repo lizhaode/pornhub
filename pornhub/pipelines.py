@@ -41,7 +41,7 @@ class PornhubPipeline(object):
             }
             status_data = {
                 'jsonrpc': '2.0',
-                'method': 'aria2.addUri',
+                'method': 'aria2.getGlobalStat',
                 'id': '0',
                 'params': [token]
             }
