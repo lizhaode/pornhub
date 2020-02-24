@@ -99,4 +99,5 @@ class MyFollow(scrapy.Spider):
                         self.logger.error('has duplicate record: %s', line)
                 else:
                     self.data_base.save_my_follow(video_title, video_channel, video_url, response.url)
-            yield PornhubItem(file_urls=video_url, file_name=video_title, file_channel=video_channel)
+            yield PornhubItem(file_urls=video_url, file_name=video_title, file_channel=video_channel,
+                              parent_url=response.url)

@@ -26,45 +26,35 @@ class PornhubPipeline(object):
         if isinstance(item, PornhubItem):
             file_path = spider.settings.get('ARIA_PATH_PREFIX') + '/' + spider.settings.get(
                 'FILES_STORE') + '/' + item.get('file_channel')
-            file_name = item.get('file_name') + '.mp4'
+            view_key = item.get('parent_url').split('viewkey=')[1]
+            file_name = '{0}-{1}.mp4'.format(item.get('file_name'), view_key)
             # check file name contains file separator like \ or /
             if os.sep in file_name:
                 file_name = file_name.replace(os.sep, '|')
 
             token = 'token:' + spider.settings.get('ARIA_TOKEN')
-            aria_data = {
+            download_data = {
                 'jsonrpc': '2.0',
                 'method': 'aria2.addUri',
                 'id': '0',
                 'params': [token, [item['file_urls']], {'out': file_name, 'dir': file_path}]
             }
-            log.info('send to aria2 rpc, args %s', aria_data)
-            response = requests.post(url=self.base_url, json=aria_data)
-            gid = response.json().get('result')
-
-            retry_times = 0
+            status_data = {
+                'jsonrpc': '2.0',
+                'method': 'aria2.addUri',
+                'id': '0',
+                'params': [token]
+            }
+            # ensure aria2 concurrent download 20 videos
             while True:
-                if retry_times > spider.settings.get('RETRY_TIMES'):
-                    log.error('over retry times, [%s] download fail', file_name)
+                response = requests.post(url=self.base_url, json=status_data)
+                active = response.json().get('result').get('numActive')
+                if int(active) <= 20:
                     break
-                time.sleep(3)
-                result = self.check_download_success(gid, token)
-                if result.get('status') == 'complete':
-                    log.info('%s download success', item.get('file_name'))
-                    break
-                elif result.get('status') == 'error':
-                    fail_code = result.get('error_code')
-                    fail_message = result.get('error_message')
-                    self.remove_download(gid, token)
-                    log.info('%s download fail, fail code is: %s, message is: %s', item.get('file_name'), fail_code,
-                             fail_message)
-                    if fail_code == '13':
-                        break
-                    elif fail_code == '22':
-                        break
-                    retry_resp = requests.post(url=self.base_url, json=aria_data)
-                    gid = retry_resp.json().get('result')
-                    retry_times += 1
+                time.sleep(5)
+
+            log.info('send to aria2 rpc, args %s', download_data)
+            requests.post(url=self.base_url, json=download_data)
 
     def check_download_success(self, gid: str, token: str) -> dict:
         result = {
