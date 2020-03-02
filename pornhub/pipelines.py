@@ -56,41 +56,6 @@ class PornhubPipeline(object):
             log.info('send to aria2 rpc, args %s', download_data)
             requests.post(url=self.base_url, json=download_data)
 
-    def check_download_success(self, gid: str, token: str) -> dict:
-        result = {
-            'status': 'downloading',
-            'error_code': '',
-            'error_message': ''
-        }
-        status_data = {
-            'jsonrpc': '2.0',
-            'method': 'aria2.tellStatus',
-            'id': '0',
-            'params': [token, gid, ['status', 'errorCode', 'errorMessage']]
-        }
-        response = requests.post(url=self.base_url, json=status_data)
-        aria_dict = response.json().get('result')
-        result['status'] = aria_dict.get('status')
-        if result['status'] == 'error':
-            result['error_code'] = aria_dict.get('errorCode')
-            result['error_message'] = aria_dict.get('errorMessage')
-            return result
-        elif result['status'] == 'complete':
-            return result
-        else:
-            return result
-
-    def remove_download(self, gid: str, token: str) -> None:
-        remove_data = {
-            'jsonrpc': '2.0',
-            'method': 'aria2.removeDownloadResult',
-            'id': '0',
-            'params': [token, gid]
-        }
-        response = requests.post(url=self.base_url, json=remove_data)
-        if response.status_code != 200 and response.json().get('result') != 'OK':
-            raise ValueError('remove download from aria2 fail')
-
 
 class DownloadVideoPipeline(FilesPipeline):
 
