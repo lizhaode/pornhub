@@ -82,7 +82,7 @@ class MyFollow(scrapy.Spider):
         video_title = response.css('h1.title').css('span::text').get()
         video_channel = response.css('div.video-actions-container').css('div.usernameWrap.clearfix').css(
             'a::text').get()
-        self.logger.info('get channel: %s, title: %s', video_channel, video_title)
+        self.logger.info('get model: %s, title: %s', video_channel, video_title)
         js = response.css('div.video-wrapper').css('#player').css('script').get()
         data_video_id = response.css('div.video-wrapper').css('#player::attr(data-video-id)').get()
         prepare_js = js.split('<script type="text/javascript">')[1].split('loadScriptUniqueId')[0]

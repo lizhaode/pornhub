@@ -26,13 +26,15 @@ class PornhubPipeline(object):
         if isinstance(item, PornhubItem):
             file_path = spider.settings.get('ARIA_PATH_PREFIX') + '/' + spider.settings.get(
                 'FILES_STORE') + '/' + item.get('file_channel')
+            token = 'token:' + spider.settings.get('ARIA_TOKEN')
+            concurrent_download = spider.settings.get('CONCURRENT_DOWNLOAD')
+
             view_key = item.get('parent_url').split('viewkey=')[1]
             file_name = '{0}-{1}.mp4'.format(item.get('file_name'), view_key)
             # check file name contains file separator like \ or /
             if os.sep in file_name:
                 file_name = file_name.replace(os.sep, '|')
 
-            token = 'token:' + spider.settings.get('ARIA_TOKEN')
             download_data = {
                 'jsonrpc': '2.0',
                 'method': 'aria2.addUri',
@@ -49,7 +51,7 @@ class PornhubPipeline(object):
             while True:
                 response = requests.post(url=self.base_url, json=status_data)
                 active = response.json().get('result').get('numActive')
-                if int(active) <= 20:
+                if int(active) < concurrent_download:
                     break
                 time.sleep(5)
 
