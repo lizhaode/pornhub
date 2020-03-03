@@ -86,11 +86,6 @@ class MyFollow(scrapy.Spider):
         if int(quality) >= 720:
             video_url = quality_items[-1]['url']
             if self.settings.get('ENABLE_SQL'):
-                result = self.data_base.select_all_by_title_my_follow(video_title)
-                if len(result) != 0:
-                    for line in result:
-                        self.logger.error('has duplicate record: %s', line)
-                else:
-                    self.data_base.save_my_follow(video_title, video_channel, video_url, response.url)
+                self.data_base.save_my_follow(video_title, video_channel, video_url, response.url)
             yield PornhubItem(file_urls=video_url, file_name=video_title, file_channel=video_channel,
                               parent_url=response.url)
