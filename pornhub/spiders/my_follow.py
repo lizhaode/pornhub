@@ -1,5 +1,3 @@
-import math
-
 import js2py
 import scrapy
 from scrapy.http.response.html import HtmlResponse
@@ -45,9 +43,11 @@ class MyFollow(scrapy.Spider):
         # check has "Load More" button
         more_button = response.css('#moreDataBtnStream')
         if more_button:
-            max_page = more_button.css("::attr(data-maxpage)").get()
+            max_page = more_button.css('::attr(data-maxpage)').get()
+            load_more_ori_str = more_button.css('::attr(onclick)').get()
+            ajax_url = load_more_ori_str.split("'")[1]
             for i in range(2, int(max_page) + 1):
-                new_link = '{0}/ajax?o=best&page={1}'.format(response.url, i)
+                new_link = '{0}&page={1}'.format(response.urljoin(ajax_url), i)
                 yield scrapy.Request(new_link, callback=self.ajax_model_page, priority=10)
 
     def porn_star_page(self, response: HtmlResponse):
