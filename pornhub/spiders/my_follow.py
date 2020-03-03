@@ -26,51 +26,44 @@ class MyFollow(scrapy.Spider):
         for item in li_tag_list:  # type: SelectorList
             sub_link = item.css('a.usernameLink').css('a::attr(href)').get()
             # filter user, model, pornStar
-            if '/model/' in sub_link or '/pornstar/' in sub_link:
+            if '/model/' in sub_link:
                 yield scrapy.Request(response.urljoin(sub_link + '/videos/upload'), callback=self.model_page,
+                                     priority=10)
+            elif '/pornstar/' in sub_link:
+                yield scrapy.Request(response.urljoin(sub_link + '/videos/upload'), callback=self.porn_star_page,
                                      priority=10)
             else:
                 yield scrapy.Request(response.urljoin(sub_link + '/videos/public'), callback=self.model_page,
                                      priority=10)
 
     def model_page(self, response: HtmlResponse):
-        if '/model/' in response.url or '/users' in response.url:
-            video_sum_element = response.css('div.showingInfo')
-            # some porn star hasn't show video number
-            page_number = 1
-            if video_sum_element:
-                video_sum = video_sum_element.css('.totalSpan::text').get()
-                sum_number = int(video_sum)
-                page_number = math.ceil(sum_number / 40)
-            # url contains page means load all videos || num == 1, start parse
-            if page_number == 1:
-                li_list = response.css('div.videoUList').css('ul').css('li')
-                for li_tag in li_list:  # type: SelectorList
-                    a_tag = li_tag.css('span.title').css('a')
-                    video_url = a_tag.css('::attr(href)').get()
-                    real_url = response.urljoin(video_url)
-                    yield scrapy.Request(real_url, callback=self.video_page, priority=100)
-            else:
-                # num > 1 means need load left videos
-                for i in range(2, page_number + 1):
-                    new_link = '{0}/ajax?o=best&page={1}'.format(response.url, i)
-                    yield scrapy.Request(new_link, callback=self.ajax_model_page, priority=10)
-        else:
-            # porn star type no need page number,because next page=2 not show all 2 page videos
-            li_list = response.css('div.videoUList').css('ul').css('li')
-            for li_tag in li_list:  # type: SelectorList
-                a_tag = li_tag.css('span.title').css('a')
-                video_url = a_tag.css('::attr(href)').get()
-                real_url = response.urljoin(video_url)
-                yield scrapy.Request(real_url, callback=self.video_page, priority=100)
-            # check has next button
-            page_element = response.css('div.pagination3')
-            if page_element:
-                # if in last page, page_next css not exist
-                next_element = page_element.css('li.page_next')
-                if next_element:
-                    next_url = next_element.css('a::attr(href)').get()
-                    yield scrapy.Request(response.urljoin(next_url), callback=self.model_page, priority=10)
+        # parse current page
+        li_list = response.css('div.videoUList').css('ul').css('li')
+        for li_tag in li_list:  # type: SelectorList
+            video_url = li_tag.css('span.title').css('a::attr(href)').get()
+            yield scrapy.Request(response.urljoin(video_url), callback=self.video_page, priority=100)
+        # check has "Load More" button
+        more_button = response.css('#moreDataBtnStream')
+        if more_button:
+            max_page = more_button.css("::attr(data-maxpage)").get()
+            for i in range(2, int(max_page) + 1):
+                new_link = '{0}/ajax?o=best&page={1}'.format(response.url, i)
+                yield scrapy.Request(new_link, callback=self.ajax_model_page, priority=10)
+
+    def porn_star_page(self, response: HtmlResponse):
+        # porn star type no need page number,because next page=2 not show all 2 page videos
+        li_list = response.css('div.videoUList').css('ul').css('li')
+        for li_tag in li_list:  # type: SelectorList
+            video_url = li_tag.css('span.title').css('a::attr(href)').get()
+            yield scrapy.Request(response.urljoin(video_url), callback=self.video_page, priority=100)
+        # check has next button
+        page_element = response.css('div.pagination3')
+        if page_element:
+            # if in last page, page_next css not exist
+            next_element = page_element.css('li.page_next')
+            if next_element:
+                next_url = next_element.css('a::attr(href)').get()
+                yield scrapy.Request(response.urljoin(next_url), callback=self.porn_star_page, priority=10)
 
     def ajax_model_page(self, response: HtmlResponse):
         model_info_list = response.css('li.pcVideoListItem')
