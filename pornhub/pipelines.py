@@ -13,8 +13,6 @@ from scrapy.pipelines.files import FilesPipeline
 from pornhub.items import PornhubItem
 from pornhub.spiders.all_channel import AllChannel
 
-log = logging.getLogger(__name__)
-
 request_log = logging.getLogger('requests')
 request_log.setLevel(logging.ERROR)
 
@@ -47,16 +45,19 @@ class PornhubPipeline(object):
                 'id': '0',
                 'params': [token]
             }
-            # ensure aria2 concurrent download 20 videos
+
             while True:
                 response = requests.post(url=self.base_url, json=status_data)
                 active = response.json().get('result').get('numActive')
                 if int(active) < concurrent_download:
                     break
-                time.sleep(5)
+                spider.logger.debug('aria2 has downloading, sleep')
+                time.sleep(50)
 
-            log.info('send to aria2 rpc, args %s', download_data)
-            requests.post(url=self.base_url, json=download_data)
+            spider.logger.info('send to aria2 rpc, item is: %s', item)
+            status_code = requests.post(url=self.base_url, json=download_data).status_code
+            if status_code != 200:
+                spider.logger.error('send to aria2 download failed, item is: %s', item)
 
 
 class DownloadVideoPipeline(FilesPipeline):
