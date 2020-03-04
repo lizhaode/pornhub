@@ -72,20 +72,27 @@ class MyFollow(scrapy.Spider):
             yield scrapy.Request(response.urljoin(video_url), callback=self.video_page, priority=100)
 
     def video_page(self, response: HtmlResponse):
+        # some video has "Watch Full Video" button
+        full_video_button = response.css("#trailerFullLengthDownload")
         video_title = response.css('h1.title').css('span::text').get()
         video_channel = response.css('div.video-actions-container').css('div.usernameWrap.clearfix').css(
             'a::text').get()
-        self.logger.info('get model: %s, title: %s', video_channel, video_title)
-        js = response.css('div.video-wrapper').css('#player').css('script').get()
-        data_video_id = response.css('div.video-wrapper').css('#player::attr(data-video-id)').get()
-        prepare_js = js.split('<script type="text/javascript">')[1].split('loadScriptUniqueId')[0]
-        exec_js = '{0}\nqualityItems_{1};'.format(prepare_js, data_video_id)
-        js_result = js2py.eval_js(exec_js)  # type: js2py.base.JsObjectWrapper
-        quality_items = js_result.to_list()  # type: list
-        quality = quality_items[-1]['text'].split('p')[0]
-        if int(quality) >= 720:
-            video_url = quality_items[-1]['url']
-            if self.settings.get('ENABLE_SQL'):
-                self.data_base.save_my_follow(video_title, video_channel, video_url, response.url)
-            yield PornhubItem(file_urls=video_url, file_name=video_title, file_channel=video_channel,
-                              parent_url=response.url)
+        if full_video_button:
+            full_url = full_video_button.css('::attr(href)').get()
+            self.logger.info('%s detected full video, original name: %s', video_channel, video_title)
+            yield scrapy.Request(full_url, callback=self.video_page, priority=100)
+        else:
+            self.logger.info('get model: %s, title: %s', video_channel, video_title)
+            js = response.css('div.video-wrapper').css('#player').css('script').get()
+            data_video_id = response.css('div.video-wrapper').css('#player::attr(data-video-id)').get()
+            prepare_js = js.split('<script type="text/javascript">')[1].split('loadScriptUniqueId')[0]
+            exec_js = '{0}\nqualityItems_{1};'.format(prepare_js, data_video_id)
+            js_result = js2py.eval_js(exec_js)  # type: js2py.base.JsObjectWrapper
+            quality_items = js_result.to_list()  # type: list
+            quality = quality_items[-1]['text'].split('p')[0]
+            if int(quality) >= 720:
+                video_url = quality_items[-1]['url']
+                if self.settings.get('ENABLE_SQL'):
+                    self.data_base.save_my_follow(video_title, video_channel, video_url, response.url)
+                yield PornhubItem(file_urls=video_url, file_name=video_title, file_channel=video_channel,
+                                  parent_url=response.url)

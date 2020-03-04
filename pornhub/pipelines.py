@@ -7,8 +7,6 @@ import os
 import time
 
 import requests
-import scrapy
-from scrapy.pipelines.files import FilesPipeline
 
 from pornhub.items import PornhubItem
 from pornhub.spiders.all_channel import AllChannel
@@ -52,24 +50,9 @@ class PornhubPipeline(object):
                 if int(active) < concurrent_download:
                     break
                 spider.logger.debug('aria2 has downloading, sleep')
-                time.sleep(50)
+                time.sleep(30)
 
             spider.logger.info('send to aria2 rpc, item is: %s', item)
             status_code = requests.post(url=self.base_url, json=download_data).status_code
             if status_code != 200:
                 spider.logger.error('send to aria2 download failed, item is: %s', item)
-
-
-class DownloadVideoPipeline(FilesPipeline):
-
-    def get_media_requests(self, item, info):
-        if isinstance(item, PornhubItem):
-            # check file name contains file separator like \ or /
-            if os.sep in item['file_name']:
-                item['file_name'] = item['file_name'].replace(os.sep, '|')
-            info.spider.logger.info('receive download task, name: {0}'.format(item['file_name']))
-            return scrapy.Request(url=item['file_urls'], meta=item, priority=200)
-
-    def file_path(self, request, response=None, info=None):
-        down_name = request.meta['file_channel'] + '/' + request.meta['file_name'] + '.mp4'
-        return down_name
