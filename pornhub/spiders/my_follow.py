@@ -74,9 +74,13 @@ class MyFollow(scrapy.Spider):
         video_channel = response.css('div.video-actions-container').css('div.usernameWrap.clearfix').css(
             'a::text').get()
         if full_video_button:
-            full_url = full_video_button.css('::attr(href)').get()
-            self.logger.info('%s detected full video, original name: %s', video_channel, video_title)
-            yield scrapy.Request(full_url, callback=self.video_page, priority=100)
+            button_title = full_video_button.css('::attr(data-title)').get()
+            if button_title != 'Buy Full Video':
+                full_url = full_video_button.css('::attr(href)').get()
+                self.logger.info('%s detected full video, original name: %s', video_channel, video_title)
+                yield scrapy.Request(full_url, callback=self.video_page, priority=100)
+            else:
+                self.logger.info('%s detected buy video, drop', video_channel)
         else:
             self.logger.info('get model: %s, title: %s', video_channel, video_title)
             player_id_element = response.css('#player')
