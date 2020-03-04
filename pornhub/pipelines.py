@@ -9,6 +9,7 @@ import time
 import requests
 
 from pornhub.items import PornhubItem
+from pornhub.lib.database import DataBase
 from pornhub.spiders.all_channel import AllChannel
 
 request_log = logging.getLogger('requests')
@@ -56,3 +57,39 @@ class PornhubPipeline(object):
             status_code = requests.post(url=self.base_url, json=download_data).status_code
             if status_code != 200:
                 spider.logger.error('send to aria2 download failed, item is: %s', item)
+        return item
+
+
+class SaveDBPipeline(object):
+
+    def __init__(self, is_enable, host, port, user, password):
+        self.is_enable = is_enable
+        self.host = host
+        self.port = port
+        self.user = user
+        self.password = password
+        self.client = None
+
+    @classmethod
+    def from_crawler(cls, crawler):
+        return cls(
+            is_enable=crawler.settings.get('ENABLE_SQL'),
+            host=crawler.settings.get('HOST'),
+            port=crawler.settings.get('PORT'),
+            user=crawler.settings.get('USER'),
+            password=crawler.settings.get('PASSWORD')
+        )
+
+    def open_spider(self, spider):
+        if self.is_enable:
+            self.client = DataBase(self.host, self.port, self.user, self.password)
+
+    def close_spider(self, spider):
+        if self.is_enable:
+            self.client.close()
+
+    def process_item(self, item, spider):
+        if self.is_enable and isinstance(item, PornhubItem):
+            self.client.save_my_follow(item.get('file_name'), item.get('file_channel'), item.get('file_urls'),
+                                       item.get('parent_url'))
+        return item

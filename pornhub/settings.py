@@ -32,7 +32,12 @@ CONCURRENT_DOWNLOAD = 8
 ARIA_TOKEN = ''
 ARIA_PATH_PREFIX = '/opt'
 CHANNEL_NUMBER = 1
+
 ENABLE_SQL = False
+HOST = ''
+PORT = 3306
+USER = 'root'
+PASSWORD = ''
 
 # Crawl responsibly by identifying yourself (and your website) on the user-agent
 USER_AGENT = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_6) AppleWebKit/537.36 (KHTML, like Gecko) ' \
@@ -89,6 +94,7 @@ DEFAULT_REQUEST_HEADERS = {
 # See https://docs.scrapy.org/en/latest/topics/item-pipeline.html
 ITEM_PIPELINES = {
     'pornhub.pipelines.PornhubPipeline': 200,
+    'pornhub.pipelines.SaveDBPipeline': 300
 }
 
 # Enable and configure the AutoThrottle extension (disabled by default)

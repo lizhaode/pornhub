@@ -4,7 +4,6 @@ from scrapy.http.response.html import HtmlResponse
 from scrapy.selector import SelectorList
 
 from pornhub.items import PornhubItem
-from pornhub.lib.database import DataBase
 
 
 class MyFollow(scrapy.Spider):
@@ -12,11 +11,8 @@ class MyFollow(scrapy.Spider):
 
     def __init__(self, name=None, **kwargs):
         super().__init__(name, **kwargs)
-        self.data_base = None
 
     def start_requests(self):
-        if self.settings.get('ENABLE_SQL'):
-            self.data_base = DataBase()
         yield scrapy.Request('https://www.pornhubpremium.com/users/daiqiangbudainiu/subscriptions')
 
     def parse(self, response: HtmlResponse):
@@ -83,16 +79,15 @@ class MyFollow(scrapy.Spider):
             yield scrapy.Request(full_url, callback=self.video_page, priority=100)
         else:
             self.logger.info('get model: %s, title: %s', video_channel, video_title)
-            js = response.css('div.video-wrapper').css('#player').css('script').get()
-            data_video_id = response.css('div.video-wrapper').css('#player::attr(data-video-id)').get()
+            player_id_element = response.css('#player')
+            js = player_id_element.css('script').get()
+            data_video_id = player_id_element.css('::attr(data-video-id)').get()
             prepare_js = js.split('<script type="text/javascript">')[1].split('loadScriptUniqueId')[0]
             exec_js = '{0}\nqualityItems_{1};'.format(prepare_js, data_video_id)
             js_result = js2py.eval_js(exec_js)  # type: js2py.base.JsObjectWrapper
             quality_items = js_result.to_list()  # type: list
-            quality = quality_items[-1]['text'].split('p')[0]
-            if int(quality) >= 720:
+            quality = quality_items[-1]['text']
+            if quality != '240p' or quality != '"480p"':
                 video_url = quality_items[-1]['url']
-                if self.settings.get('ENABLE_SQL'):
-                    self.data_base.save_my_follow(video_title, video_channel, video_url, response.url)
                 yield PornhubItem(file_urls=video_url, file_name=video_title, file_channel=video_channel,
                                   parent_url=response.url)
