@@ -9,26 +9,26 @@ from pornhub.items import PornhubItem
 class MyFollow(scrapy.Spider):
     name = 'myfollow'
 
-    def __init__(self, name=None, **kwargs):
-        super().__init__(name, **kwargs)
-
     def start_requests(self):
         yield scrapy.Request('https://www.pornhubpremium.com/users/daiqiangbudainiu/subscriptions')
 
     def parse(self, response: HtmlResponse):
+        model_filter_list = self.settings.getlist('MODEL_FILTER_LIST')
         li_tag_list = response.css('div.sectionWrapper').css('ul#moreData').css('li')
         for item in li_tag_list:  # type: SelectorList
             sub_link = item.css('a.usernameLink').css('a::attr(href)').get()
-            # filter user, model, pornStar
-            if '/model/' in sub_link:
-                yield scrapy.Request(response.urljoin(sub_link + '/videos/upload'), callback=self.model_page,
-                                     priority=10)
-            elif '/pornstar/' in sub_link:
-                yield scrapy.Request(response.urljoin(sub_link + '/videos/upload'), callback=self.porn_star_page,
-                                     priority=10)
-            else:
-                yield scrapy.Request(response.urljoin(sub_link + '/videos/public'), callback=self.model_page,
-                                     priority=10)
+            model_name = sub_link.split('/')[-1]
+            if model_name in model_filter_list or len(model_filter_list) == 0:
+                # filter user, model, pornStar
+                if '/model/' in sub_link:
+                    yield scrapy.Request(response.urljoin(sub_link + '/videos/upload'), callback=self.model_page,
+                                         priority=10)
+                elif '/pornstar/' in sub_link:
+                    yield scrapy.Request(response.urljoin(sub_link + '/videos/upload'), callback=self.porn_star_page,
+                                         priority=10)
+                else:
+                    yield scrapy.Request(response.urljoin(sub_link + '/videos/public'), callback=self.model_page,
+                                         priority=10)
 
     def model_page(self, response: HtmlResponse):
         # parse current page

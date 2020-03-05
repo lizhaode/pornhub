@@ -25,6 +25,8 @@ MySQL 创建`pornhub`库
 
 `DEFAULT_REQUEST_HEADERS` 提取你自己帐号的 Cookie 配置进去
 
+`MODEL_FILTER_LIST` 这是一个 list, 将关注的 porn star 的名字(**url中的名字，跟网页上显示的会有差别**)填进去
+
 其他的配置项可以了解一下 Scrapy 框架
 
 4. lib 目录下的 database.py 配置
