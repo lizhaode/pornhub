@@ -10,6 +10,7 @@ import requests
 
 from pornhub.items import PornhubItem
 from pornhub.lib.database import DataBase
+from pornhub.lib.download_header import random_other_headers
 from pornhub.spiders.all_channel import AllChannel
 
 request_log = logging.getLogger('requests')
@@ -36,7 +37,8 @@ class PornhubPipeline(object):
                 'jsonrpc': '2.0',
                 'method': 'aria2.addUri',
                 'id': '0',
-                'params': [token, [item['file_urls']], {'out': file_name, 'dir': file_path}]
+                'params': [token, [item['file_urls']],
+                           {'out': file_name, 'dir': file_path, "header": random_other_headers()}]
             }
             status_data = {
                 'jsonrpc': '2.0',
