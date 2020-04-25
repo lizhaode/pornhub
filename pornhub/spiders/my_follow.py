@@ -80,24 +80,22 @@ class MyFollow(scrapy.Spider):
             'a::text').get()
         if full_video_button:
             button_title = full_video_button.css('::attr(data-title)').get()
-            if button_title != 'Buy Full Video':
+            if button_title == 'Watch Full Video':
                 full_url = full_video_button.css('::attr(href)').get()
                 self.logger.info('%s detected full video, original name: %s', video_channel, video_title)
                 yield scrapy.Request(full_url, callback=self.video_page, priority=100)
-            else:
-                self.logger.info('%s detected buy video, drop', video_title)
-        else:
-            self.logger.debug('get model: %s, title: %s', video_channel, video_title)
-            player_id_element = response.css('#player')
-            js = player_id_element.css('script').get()
-            data_video_id = player_id_element.css('::attr(data-video-id)').get()
-            prepare_js = js.split('<script type="text/javascript">')[1].split('playerObjList')[0]
-            exec_js = '{0}\nqualityItems_{1};'.format(prepare_js, data_video_id)
-            js_result = js2py.eval_js(exec_js)  # type: js2py.base.JsObjectWrapper
-            quality_items = js_result.to_list()  # type: list
-            video_url = quality_items[-1]['url']
-            yield PornhubItem(file_urls=video_url, file_name=video_title, file_channel=video_channel,
-                              parent_url=response.url)
+                return
+        self.logger.debug('get model: %s, title: %s', video_channel, video_title)
+        player_id_element = response.css('#player')
+        js = player_id_element.css('script').get()
+        data_video_id = player_id_element.css('::attr(data-video-id)').get()
+        prepare_js = js.split('<script type="text/javascript">')[1].split('playerObjList')[0]
+        exec_js = '{0}\nqualityItems_{1};'.format(prepare_js, data_video_id)
+        js_result = js2py.eval_js(exec_js)  # type: js2py.base.JsObjectWrapper
+        quality_items = js_result.to_list()  # type: list
+        video_url = quality_items[-1]['url']
+        yield PornhubItem(file_urls=video_url, file_name=video_title, file_channel=video_channel,
+                          parent_url=response.url)
 
     def check_is_hd_video(self, response: HtmlResponse) -> list:
         hd_video_list = []
