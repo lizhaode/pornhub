@@ -10,7 +10,7 @@ class MyFollow(scrapy.Spider):
     name = 'myfollow'
 
     def start_requests(self):
-        yield scrapy.Request('https://cn.pornhubpremium.com/premium/login')
+        yield scrapy.Request('https://www.pornhubpremium.com/premium/login')
 
     def parse(self, response: HtmlResponse, **kwargs):
         body = {
@@ -21,7 +21,7 @@ class MyFollow(scrapy.Spider):
             'from': 'mobile_premium_login',
             'segment': 'straight'
         }
-        yield scrapy.FormRequest(url='https://cn.pornhubpremium.com/front/authenticate', formdata=body,
+        yield scrapy.FormRequest(url='https://www.pornhubpremium.com/front/authenticate', formdata=body,
                                  callback=self.login_response)
 
     def login_response(self, response: HtmlResponse, **kwargs):
