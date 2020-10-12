@@ -10,9 +10,26 @@ class MyFollow(scrapy.Spider):
     name = 'myfollow'
 
     def start_requests(self):
-        yield scrapy.Request('https://www.pornhubpremium.com/users/daiqiangbudainiu/subscriptions')
+        yield scrapy.Request('https://cn.pornhubpremium.com/premium/login')
 
-    def parse(self, response: HtmlResponse):
+    def parse(self, response: HtmlResponse, **kwargs):
+        body = {
+            'username': self.settings.get('PORN_USER'),
+            'password': self.settings.get('PORN_PWD'),
+            'token': response.css('input#token::attr(value)').get(),
+            'redirect': '',
+            'from': 'mobile_premium_login',
+            'segment': 'straight'
+        }
+        yield scrapy.FormRequest(url='https://cn.pornhubpremium.com/front/authenticate', formdata=body,
+                                 callback=self.login_response)
+
+    def login_response(self, response: HtmlResponse, **kwargs):
+        if response.json().get('success') == '1':
+            yield scrapy.Request('https://www.pornhubpremium.com/users/daiqiangbudainiu/subscriptions',
+                                 callback=self.start_parse)
+
+    def start_parse(self, response: HtmlResponse, **kwargs):
         model_filter_list = self.settings.getlist('MODEL_FILTER_LIST')
         li_tag_list = response.css('div.sectionWrapper').css('ul#moreData').css('li')
         for item in li_tag_list:  # type: SelectorList

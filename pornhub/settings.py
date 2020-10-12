@@ -33,6 +33,9 @@ ARIA_PATH_PREFIX = '/opt'
 CHANNEL_NUMBER = 1
 MODEL_FILTER_LIST = []
 
+PORN_USER = ''
+PORN_PWD = ''
+
 ENABLE_SQL = False
 HOST = ''
 PORT = 3306
@@ -58,7 +61,7 @@ DOWNLOAD_DELAY = 1
 # CONCURRENT_REQUESTS_PER_IP = 10
 
 # Disable cookies (enabled by default)
-COOKIES_ENABLED = False
+# COOKIES_ENABLED = False
 
 # Disable Telnet Console (enabled by default)
 # TELNETCONSOLE_ENABLED = False
@@ -67,8 +70,7 @@ COOKIES_ENABLED = False
 DEFAULT_REQUEST_HEADERS = {
     'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,'
               'application/signed-exchange;v=b3',
-    'Accept-Language': 'zh-CN,zh;q=0.9',
-    'Cookie': ''
+    'Accept-Language': 'zh-CN,zh;q=0.9'
 }
 
 # Enable or disable spider middlewares
