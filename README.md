@@ -23,7 +23,7 @@ MySQL 创建`pornhub`库
 
 `CHANNEL_NUMBER = 1` 可以是数字，也可以是 ALL ，代表 channel.txt 文件中取多少行
 
-`DEFAULT_REQUEST_HEADERS` 提取你自己帐号的 Cookie 配置进去
+`PORN_USER` `PORN_PWD` 填入你自己的帐号密码
 
 `MODEL_FILTER_LIST` 这是一个 list, 将关注的 porn star 的名字(**url中的名字，跟网页上显示的会有差别**)填进去
 
