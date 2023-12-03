@@ -4,9 +4,9 @@ import js2py
 import scrapy
 from scrapy.http.response.html import HtmlResponse
 from scrapy.selector import SelectorList
+from zhconv.zhconv import convert
 
 from pornhub.items import PornhubItem
-from pornhub.lib.convert_tool import converter
 
 
 class MyFollow(scrapy.Spider):
@@ -85,7 +85,7 @@ class MyFollow(scrapy.Spider):
 
     def video_page(self, response: HtmlResponse, **kwargs: Any):
         # some video has "Watch Full Video" button, ignore now
-        video_title = converter.convert(response.css('h1.title').css('span::text').get())
+        video_title = convert(response.css('h1.title').css('span::text').get())
         video_channel = response.css('div.userInfo').css('a::text').get()
         self.logger.info('get model: %s, title: %s', video_channel, video_title)
         player_id_element = response.css('div#player')

@@ -3,4 +3,4 @@ scrapy
 js2py
 pymysql
 m3u8
-opencc
+zhconv
