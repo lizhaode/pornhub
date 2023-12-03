@@ -1,3 +1,6 @@
+import time
+from typing import Any
+
 import js2py
 import scrapy
 from scrapy.http.response.html import HtmlResponse
@@ -10,26 +13,30 @@ class MyFollow(scrapy.Spider):
     name = 'myfollow'
 
     def start_requests(self):
-        yield scrapy.Request('https://www.pornhubpremium.com/premium/login')
+        yield scrapy.Request('https://www.pornhub.com/login')
 
-    def parse(self, response: HtmlResponse, **kwargs):
+    def parse(self, response: HtmlResponse, **kwargs: Any):
         body = {
             'username': self.settings.get('PORN_USER'),
             'password': self.settings.get('PORN_PWD'),
             'token': response.css('input#token::attr(value)').get(),
-            'redirect': '',
-            'from': 'mobile_premium_login',
-            'segment': 'straight'
+            'redirect': response.css('form.js-loginFormModal.js-loginForm').css('input.js-redirect::attr(value)').get(),
+            'from': 'pc_login_modal_:index',
+            'user_id': '',
+            'intended_action': '',
+            'taste_profile': '',
         }
-        yield scrapy.FormRequest(url='https://www.pornhubpremium.com/front/authenticate', formdata=body,
-                                 callback=self.login_response)
+        yield scrapy.FormRequest(
+            url='https://cn.pornhub.com/front/authenticate', formdata=body, callback=self.parse_subscription
+        )
 
-    def login_response(self, response: HtmlResponse, **kwargs):
+    def parse_subscription(self, response: HtmlResponse, **kwargs: Any):
         if response.json().get('success') == '1':
-            yield scrapy.Request('https://www.pornhubpremium.com/users/daiqiangbudainiu/subscriptions',
-                                 callback=self.start_parse)
+            yield scrapy.Request(
+                'https://cn.pornhub.com/users/daiqiangbudainiu/subscriptions', callback=self.start_parse
+            )
 
-    def start_parse(self, response: HtmlResponse, **kwargs):
+    def start_parse(self, response: HtmlResponse, **kwargs: Any):
         model_filter_list = self.settings.getlist('MODEL_FILTER_LIST')
         li_tag_list = response.css('div.sectionWrapper').css('ul#moreData').css('li')
         for item in li_tag_list:  # type: SelectorList
@@ -38,36 +45,31 @@ class MyFollow(scrapy.Spider):
             if model_name in model_filter_list or len(model_filter_list) == 0:
                 # filter user, model, pornStar
                 if '/model/' in sub_link:
-                    yield scrapy.Request(response.urljoin(sub_link + '/videos/upload'), callback=self.model_page,
-                                         priority=10)
-                    yield scrapy.Request(response.urljoin(sub_link + '/videos/premium'), callback=self.model_page,
-                                         priority=10)
-
+                    yield scrapy.Request(response.urljoin(sub_link + '/videos'), callback=self.model_page, priority=10)
                 elif '/pornstar/' in sub_link:
-                    yield scrapy.Request(response.urljoin(sub_link + '/videos/upload'), callback=self.porn_star_page,
-                                         priority=10)
-                    yield scrapy.Request(response.urljoin(sub_link + '/videos/premium'), callback=self.porn_star_page,
-                                         priority=10)
+                    yield scrapy.Request(
+                        response.urljoin(sub_link + '/videos/upload'), callback=self.porn_star_page, priority=10
+                    )
+                    yield scrapy.Request(
+                        response.urljoin(sub_link + '/videos/premium'), callback=self.porn_star_page, priority=10
+                    )
                 else:
-                    yield scrapy.Request(response.urljoin(sub_link + '/videos/public'), callback=self.model_page,
-                                         priority=10)
+                    yield scrapy.Request(
+                        response.urljoin(sub_link + '/videos/public'), callback=self.model_page, priority=10
+                    )
 
-    def model_page(self, response: HtmlResponse):
-        # parse current page
-        video_list = self.check_is_hd_video(response)
-        for i in video_list:
-            yield scrapy.Request(response.urljoin(i), callback=self.video_page, priority=100)
-        # check has "Load More" button
-        more_button = response.css('#moreDataBtnStream')
-        if more_button:
-            max_page = more_button.css('::attr(data-maxpage)').get()
-            load_more_ori_str = more_button.css('::attr(onclick)').get()
-            ajax_url = load_more_ori_str.split("'")[1]
-            for i in range(2, int(max_page) + 1):
-                new_link = '{0}&page={1}'.format(response.urljoin(ajax_url), i)
-                yield scrapy.Request(new_link, callback=self.ajax_model_page, priority=10)
+    def model_page(self, response: HtmlResponse, **kwargs: Any):
+        # 1.parse current page
+        for video_item in response.css('div.videoUList').css('li.pcVideoListItem'):  # type:SelectorList
+            video_url = video_item.css('span.title').css('a::attr(href)').get()
+            yield scrapy.Request(response.urljoin(video_url), callback=self.video_page, priority=100)
 
-    def porn_star_page(self, response: HtmlResponse):
+        # 2.check next page
+        next_url = response.css('li.page_next').css('a::attr(href)').get()
+        if next_url:
+            yield scrapy.Request(response.urljoin(next_url), callback=self.model_page, priority=50)
+
+    def porn_star_page(self, response: HtmlResponse, **kwargs: Any):
         # porn star type no need page number,because next page=2 not show all 2 page videos
         video_list = self.check_is_hd_video(response)
         for i in video_list:
@@ -81,45 +83,33 @@ class MyFollow(scrapy.Spider):
                 next_url = next_element.css('a::attr(href)').get()
                 yield scrapy.Request(response.urljoin(next_url), callback=self.porn_star_page, priority=10)
 
-    def ajax_model_page(self, response: HtmlResponse):
-        model_info_list = response.css('li.pcVideoListItem')
-        for item in model_info_list:  # type: SelectorList
-            hd_span = item.css('div.phimage').css('span.hd-thumbnail')
-            if hd_span:
-                video_url = item.css('span.title').css('a::attr(href)').get()
-                yield scrapy.Request(response.urljoin(video_url), callback=self.video_page, priority=100)
-
-    def video_page(self, response: HtmlResponse):
-        # some video has "Watch Full Video" button
-        full_video_button = response.css("#trailerFullLengthDownload")
+    def video_page(self, response: HtmlResponse, **kwargs: Any):
+        start = time.perf_counter_ns()
+        # some video has "Watch Full Video" button, ignore now
         video_title = response.css('h1.title').css('span::text').get()
-        video_channel = response.css('div.video-actions-container').css('div.usernameWrap.clearfix').css(
-            'a::text').get()
-        if full_video_button:
-            button_title = full_video_button.css('::attr(data-title)').get()
-            if button_title == 'Watch Full Video':
-                full_url = full_video_button.css('::attr(href)').get()
-                self.logger.info('%s detected full video, original name: %s', video_channel, video_title)
-                yield scrapy.Request(full_url, callback=self.video_page, priority=100)
-                return
-        self.logger.debug('get model: %s, title: %s', video_channel, video_title)
-        player_id_element = response.css('#player')
-        js = player_id_element.css('script').get()
-        data_video_id = player_id_element.css('::attr(data-video-id)').get()
-        prepare_js = js.split('<script type="text/javascript">')[1].split('playerObjList')[0]
-        exec_js = '{0}\nqualityItems_{1};'.format(prepare_js, data_video_id)
-        js_result = js2py.eval_js(exec_js)  # type: js2py.base.JsObjectWrapper
-        quality_items = js_result.to_list()  # type: list
-        video_url = quality_items[-1]['url']
-        yield PornhubItem(file_urls=video_url, file_name=video_title, file_channel=video_channel,
-                          parent_url=response.url)
-
-    def check_is_hd_video(self, response: HtmlResponse) -> list:
-        hd_video_list = []
-        li_list = response.css('div.videoUList').css('ul').css('li')
-        for li_tag in li_list:  # type: SelectorList
-            hd_span = li_tag.css('div.phimage').css('span.hd-thumbnail')
-            if hd_span:
-                video_url = li_tag.css('span.title').css('a::attr(href)').get()
-                hd_video_list.append(video_url)
-        return hd_video_list
+        video_channel = response.css('div.userInfo').css('a::text').get()
+        self.logger.info('get model: %s, title: %s', video_channel, video_title)
+        player_id_element = response.css('div#player')
+        prepare_js = (
+            player_id_element.css('script')
+            .get()
+            .split('<script type="text/javascript">')[1]
+            .split('playerObjList')[0]
+            .strip()
+        )
+        exec_js = '{0}\nflashvars_{1};'.format(prepare_js, player_id_element.css('::attr(data-video-id)').get())
+        middle = time.perf_counter_ns()
+        video_info_list = js2py.eval_js(exec_js).to_dict().get('mediaDefinitions')
+        # make sure dict structure {quality:'1080'}
+        highest_quality = sorted(
+            video_info_list,
+            key=lambda x: int(x.get('quality')) if isinstance(x.get('quality'), str) else 0,
+            reverse=True,
+        )[0]
+        if int(highest_quality.get('quality')) >= 1080:
+            yield PornhubItem(
+                file_urls=highest_quality.get('videoUrl'),
+                file_name=video_title,
+                file_channel=video_channel,
+                parent_url=response.url,
+            )

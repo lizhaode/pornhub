@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 # Scrapy settings for pornhub project
 #
 # For simplicity, this file contains only settings considered important or
@@ -15,23 +13,15 @@ SPIDER_MODULES = ['pornhub.spiders']
 NEWSPIDER_MODULE = 'pornhub.spiders'
 
 LOG_FILE = 'stdout.log'
-LOG_LEVEL = 'INFO'
+LOG_LEVEL = 'DEBUG'
 LOG_FORMAT = '%(asctime)s %(levelname)s --- [%(name)s-%(threadName)s] %(message)s'
 LOG_SHORT_NAMES = True
-RETRY_ENABLED = True
-RETRY_TIMES = 10
-RETRY_HTTP_CODES = [500, 503, 504, 400, 403, 408]
-DOWNLOAD_TIMEOUT = 3600
-DOWNLOAD_MAXSIZE = 0
-DOWNLOAD_WARNSIZE = 0
-DOWNLOAD_FAIL_ON_DATALOSS = False
 
 FILES_STORE = 'videos'
 
-ARIA_TOKEN = ''
-ARIA_PATH_PREFIX = '/opt'
+PATH_PREFIX = ''
 CHANNEL_NUMBER = 1
-MODEL_FILTER_LIST = []
+MODEL_FILTER_LIST = ['nana_taipei']
 
 PORN_USER = ''
 PORN_PWD = ''
@@ -43,8 +33,7 @@ USER = 'root'
 PASSWORD = ''
 
 # Crawl responsibly by identifying yourself (and your website) on the user-agent
-USER_AGENT = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_6) AppleWebKit/537.36 (KHTML, like Gecko) ' \
-             'Chrome/78.0.3904.108 Safari/537.36 '
+USER_AGENT = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36'
 
 # Obey robots.txt rules
 ROBOTSTXT_OBEY = False
@@ -55,7 +44,7 @@ ROBOTSTXT_OBEY = False
 # Configure a delay for requests for the same website (default: 0)
 # See https://docs.scrapy.org/en/latest/topics/settings.html#download-delay
 # See also autothrottle settings and docs
-DOWNLOAD_DELAY = 1
+DOWNLOAD_DELAY = 0.3
 # The download delay setting will honor only one of:
 # CONCURRENT_REQUESTS_PER_DOMAIN = 10
 # CONCURRENT_REQUESTS_PER_IP = 10
@@ -64,13 +53,12 @@ DOWNLOAD_DELAY = 1
 # COOKIES_ENABLED = False
 
 # Disable Telnet Console (enabled by default)
-# TELNETCONSOLE_ENABLED = False
+TELNETCONSOLE_ENABLED = False
 
 # Override the default request headers:
 DEFAULT_REQUEST_HEADERS = {
-    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,'
-              'application/signed-exchange;v=b3',
-    'Accept-Language': 'zh-CN,zh;q=0.9'
+    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7',
+    'Accept-Language': 'zh-CN,zh;q=0.9',
 }
 
 # Enable or disable spider middlewares
@@ -96,7 +84,7 @@ DEFAULT_REQUEST_HEADERS = {
 # See https://docs.scrapy.org/en/latest/topics/item-pipeline.html
 ITEM_PIPELINES = {
     'pornhub.pipelines.PornhubPipeline': 300,
-    'pornhub.pipelines.SaveDBPipeline': 200
+    # 'pornhub.pipelines.SaveDBPipeline': 200
 }
 
 # Enable and configure the AutoThrottle extension (disabled by default)

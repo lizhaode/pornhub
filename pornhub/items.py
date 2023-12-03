@@ -15,4 +15,3 @@ class PornhubItem(scrapy.Item):
     file_name = scrapy.Field()
     file_channel = scrapy.Field()
     parent_url = scrapy.Field()
-    files = scrapy.Field()

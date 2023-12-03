@@ -2,52 +2,63 @@
 #
 # Don't forget to add your pipeline to the ITEM_PIPELINES setting
 # See: https://docs.scrapy.org/en/latest/topics/item-pipeline.html
-import logging
+import base64
 import os
+import shlex
+import shutil
+import subprocess
 
-import requests
+import m3u8
 
 from pornhub.items import PornhubItem
 from pornhub.lib.database import DataBase
-from pornhub.lib.download_header import random_other_headers
 from pornhub.spiders.all_channel import AllChannel
-
-request_log = logging.getLogger('requests')
-request_log.setLevel(logging.ERROR)
 
 
 class PornhubPipeline(object):
-    base_url = 'http://127.0.0.1:8800/jsonrpc'
-
     def process_item(self, item, spider: AllChannel):
         if isinstance(item, PornhubItem):
-            file_path = spider.settings.get('ARIA_PATH_PREFIX') + '/' + spider.settings.get(
-                'FILES_STORE') + '/' + item.get('file_channel')
-            token = 'token:' + spider.settings.get('ARIA_TOKEN')
-
+            temp_store_path = base64.urlsafe_b64encode(item.get('file_name').encode()).decode()
             view_key = item.get('parent_url').split('viewkey=')[1]
-            file_name = '{0}-{1}.mp4'.format(item.get('file_name'), view_key)
+            file_name = f'{item.get("file_name")}-{view_key}.mp4'
             # check file name contains file separator like \ or /
             if os.sep in file_name:
                 file_name = file_name.replace(os.sep, '|')
+            final_store_path = os.path.join(
+                spider.settings.get('PATH_PREFIX'), spider.settings.get('FILES_STORE'), item.get('file_channel')
+            )
+            if not os.path.exists(final_store_path):
+                spider.logger.info('create folder %s', final_store_path)
+                os.makedirs(final_store_path)
+            spider.logger.info('start to download, item is: %s', item)
 
-            download_data = {
-                'jsonrpc': '2.0',
-                'method': 'aria2.addUri',
-                'id': '0',
-                'params': [token, [item['file_urls']],
-                           {'out': file_name, 'dir': file_path, "header": random_other_headers()}]
-            }
+            with open(f'{item.get("file_name")}.txt', 'w') as down_txt:
+                for segment_info in m3u8.load(
+                    m3u8.load(item.get("file_urls")).playlists[0].absolute_uri
+                ).segments:  # type:m3u8.Segment
+                    down_txt.write(segment_info.absolute_uri + '\n')
+            subprocess.run(
+                shlex.split(f'aria2c -i {item.get("file_name")}.txt -j 10 -d {temp_store_path}'),
+                check=True,
+                capture_output=True,
+            )
 
-            spider.logger.info('send to aria2 rpc, item is: %s', item)
-            status_code = 300
-            while status_code != 200:
-                status_code = requests.post(url=self.base_url, json=download_data).status_code
+            with open(os.path.join(final_store_path, file_name), 'ab') as final_video:
+                for combine_file_name in sorted(
+                    os.listdir(temp_store_path),
+                    key=lambda x: int(x.split('-')[1]),
+                ):
+                    with open(
+                        os.path.join(temp_store_path, combine_file_name),
+                        'rb',
+                    ) as video_file:
+                        final_video.write(video_file.read())
+            # clean folder
+            shutil.rmtree(temp_store_path)
         return item
 
 
 class SaveDBPipeline(object):
-
     def __init__(self, is_enable, host, port, user, password):
         self.is_enable = is_enable
         self.host = host
@@ -63,7 +74,7 @@ class SaveDBPipeline(object):
             host=crawler.settings.get('HOST'),
             port=crawler.settings.get('PORT'),
             user=crawler.settings.get('USER'),
-            password=crawler.settings.get('PASSWORD')
+            password=crawler.settings.get('PASSWORD'),
         )
 
     def open_spider(self, spider):
@@ -76,6 +87,7 @@ class SaveDBPipeline(object):
 
     def process_item(self, item, spider):
         if self.is_enable and isinstance(item, PornhubItem):
-            self.client.save_my_follow(item.get('file_name'), item.get('file_channel'), item.get('file_urls'),
-                                       item.get('parent_url'))
+            self.client.save_my_follow(
+                item.get('file_name'), item.get('file_channel'), item.get('file_urls'), item.get('parent_url')
+            )
         return item
