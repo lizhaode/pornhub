@@ -20,7 +20,7 @@ class PornhubPipeline(object):
         # temp path to store m3u8 downloaded ts files
         temp_store_path = base64.urlsafe_b64encode(item.get('file_name').encode()).decode()
         view_key = item.get('parent_url').split('viewkey=')[1]
-        file_name = f'{item.get("file_name")}-{view_key}.mp4'
+        file_name = f'{item.get("file_name")}-{view_key}.ts'
         # check file name contains file separator like \ or /
         if os.sep in file_name:
             file_name = file_name.replace(os.sep, '|')
@@ -32,6 +32,15 @@ class PornhubPipeline(object):
             spider.logger.info('create folder %s', final_store_path)
             os.makedirs(final_store_path)
         return {'temp_store_path': temp_store_path, 'file_name': file_name, 'final_store_path': final_store_path}
+
+    def pass_to_ffmpeg(self, file_path: str) -> None:
+        """
+        original video is ts
+        using ffmpeg copy to mp4
+        otherwise Telegram can not play
+        """
+        output_path = file_path.replace('.ts', '.mp4')
+        subprocess.run(shlex.split(f'ffmpeg -i "{file_path}" -c copy "{output_path}"'), check=True, capture_output=True)
 
     def process_item(self, item: PornhubItem, spider: AllChannel):
         if not isinstance(item, PornhubItem):
@@ -53,7 +62,7 @@ class PornhubPipeline(object):
         final_mp4_full_path = os.path.join(prepared_info.get('final_store_path'), prepared_info.get('file_name'))
         # TODO;check md5, decide copy or ignore,avoid repeat merge
         if os.path.exists(final_mp4_full_path):
-            spider.logger.error('file exists, item: %s', item)
+            spider.logger.warning('file exists, item: %s', item)
             return item
         with open(final_mp4_full_path, 'ab') as final_video:
             for combine_file_name in sorted(
@@ -65,6 +74,7 @@ class PornhubPipeline(object):
                     'rb',
                 ) as video_file:
                     final_video.write(video_file.read())
+        self.pass_to_ffmpeg(final_mp4_full_path)
         # clean folder
         shutil.rmtree(prepared_info.get("temp_store_path"))
 
