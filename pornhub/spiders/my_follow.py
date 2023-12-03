@@ -104,10 +104,12 @@ class MyFollow(scrapy.Spider):
             key=lambda x: int(x.get('quality')) if isinstance(x.get('quality'), str) else 0,
             reverse=True,
         )[0]
-        if int(highest_quality.get('quality')) >= 1080:
+        if int(highest_quality.get('quality')) >= 720:
             yield PornhubItem(
                 file_urls=highest_quality.get('videoUrl'),
                 file_name=video_title,
                 file_channel=video_channel,
                 parent_url=response.url,
             )
+        else:
+            self.logger.warning('quality low, not download title: %s', video_title)

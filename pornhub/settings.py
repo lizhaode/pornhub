@@ -13,7 +13,7 @@ SPIDER_MODULES = ['pornhub.spiders']
 NEWSPIDER_MODULE = 'pornhub.spiders'
 
 LOG_FILE = 'stdout.log'
-LOG_LEVEL = 'ERROR'
+LOG_LEVEL = 'WARNING'
 LOG_FORMAT = '%(asctime)s %(levelname)s --- [%(name)s-%(threadName)s] %(message)s'
 LOG_SHORT_NAMES = True
 
