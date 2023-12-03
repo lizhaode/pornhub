@@ -13,7 +13,7 @@ SPIDER_MODULES = ['pornhub.spiders']
 NEWSPIDER_MODULE = 'pornhub.spiders'
 
 LOG_FILE = 'stdout.log'
-LOG_LEVEL = 'DEBUG'
+LOG_LEVEL = 'ERROR'
 LOG_FORMAT = '%(asctime)s %(levelname)s --- [%(name)s-%(threadName)s] %(message)s'
 LOG_SHORT_NAMES = True
 
@@ -107,3 +107,4 @@ ITEM_PIPELINES = {
 # HTTPCACHE_DIR = 'httpcache'
 # HTTPCACHE_IGNORE_HTTP_CODES = []
 # HTTPCACHE_STORAGE = 'scrapy.extensions.httpcache.FilesystemCacheStorage'
+REQUEST_FINGERPRINTER_IMPLEMENTATION = '2.7'

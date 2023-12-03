@@ -16,46 +16,57 @@ from pornhub.spiders.all_channel import AllChannel
 
 
 class PornhubPipeline(object):
-    def process_item(self, item, spider: AllChannel):
-        if isinstance(item, PornhubItem):
-            temp_store_path = base64.urlsafe_b64encode(item.get('file_name').encode()).decode()
-            view_key = item.get('parent_url').split('viewkey=')[1]
-            file_name = f'{item.get("file_name")}-{view_key}.mp4'
-            # check file name contains file separator like \ or /
-            if os.sep in file_name:
-                file_name = file_name.replace(os.sep, '|')
-            final_store_path = os.path.join(
-                spider.settings.get('PATH_PREFIX'), spider.settings.get('FILES_STORE'), item.get('file_channel')
-            )
-            if not os.path.exists(final_store_path):
-                spider.logger.info('create folder %s', final_store_path)
-                os.makedirs(final_store_path)
-            spider.logger.info('start to download, item is: %s', item)
+    def prepare_folder(self, item: PornhubItem, spider: AllChannel) -> dict:
+        # temp path to store m3u8 downloaded ts files
+        temp_store_path = base64.urlsafe_b64encode(item.get('file_name').encode()).decode()
+        view_key = item.get('parent_url').split('viewkey=')[1]
+        file_name = f'{item.get("file_name")}-{view_key}.mp4'
+        # check file name contains file separator like \ or /
+        if os.sep in file_name:
+            file_name = file_name.replace(os.sep, '|')
+        # final path to store combined mp4 files
+        final_store_path = os.path.join(
+            spider.settings.get('PATH_PREFIX'), spider.settings.get('FILES_STORE'), item.get('file_channel')
+        )
+        if not os.path.exists(final_store_path):
+            spider.logger.info('create folder %s', final_store_path)
+            os.makedirs(final_store_path)
+        return {'temp_store_path': temp_store_path, 'file_name': file_name, 'final_store_path': final_store_path}
 
-            with open(f'{item.get("file_name")}.txt', 'w') as down_txt:
-                for segment_info in m3u8.load(
-                    m3u8.load(item.get("file_urls")).playlists[0].absolute_uri
-                ).segments:  # type:m3u8.Segment
-                    down_txt.write(segment_info.absolute_uri + '\n')
-            subprocess.run(
-                shlex.split(f'aria2c -i {item.get("file_name")}.txt -j 10 -d {temp_store_path}'),
-                check=True,
-                capture_output=True,
-            )
+    def process_item(self, item: PornhubItem, spider: AllChannel):
+        if not isinstance(item, PornhubItem):
+            return item
+        prepared_info = self.prepare_folder(item, spider)
+        spider.logger.info('start to download, item is: %s', item)
+        m3u8_list_file_name = f'{item.get("file_name")}.txt'
+        with open(m3u8_list_file_name, 'w') as down_txt:
+            for segment_info in m3u8.load(
+                m3u8.load(item.get("file_urls")).playlists[0].absolute_uri
+            ).segments:  # type:m3u8.Segment
+                down_txt.write(f'{segment_info.absolute_uri}\n')
+        subprocess.run(
+            shlex.split(f'aria2c -i "{m3u8_list_file_name}" -j 10 -d {prepared_info.get("temp_store_path")}'),
+            check=True,
+            capture_output=True,
+        )
 
-            with open(os.path.join(final_store_path, file_name), 'ab') as final_video:
-                for combine_file_name in sorted(
-                    os.listdir(temp_store_path),
-                    key=lambda x: int(x.split('-')[1]),
-                ):
-                    with open(
-                        os.path.join(temp_store_path, combine_file_name),
-                        'rb',
-                    ) as video_file:
-                        final_video.write(video_file.read())
-            # clean folder
-            shutil.rmtree(temp_store_path)
-        return item
+        final_mp4_full_path = os.path.join(prepared_info.get('final_store_path'), prepared_info.get('file_name'))
+        # TODO;check md5, decide copy or ignore,avoid repeat merge
+        if os.path.exists(final_mp4_full_path):
+            spider.logger.error('file exists, item: %s', item)
+            return item
+        with open(final_mp4_full_path, 'ab') as final_video:
+            for combine_file_name in sorted(
+                os.listdir(prepared_info.get("temp_store_path")),
+                key=lambda x: int(x.split('-')[1]),
+            ):
+                with open(
+                    os.path.join(prepared_info.get("temp_store_path"), combine_file_name),
+                    'rb',
+                ) as video_file:
+                    final_video.write(video_file.read())
+        # clean folder
+        shutil.rmtree(prepared_info.get("temp_store_path"))
 
 
 class SaveDBPipeline(object):

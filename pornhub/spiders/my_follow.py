@@ -1,4 +1,3 @@
-import time
 from typing import Any
 
 import js2py
@@ -7,6 +6,7 @@ from scrapy.http.response.html import HtmlResponse
 from scrapy.selector import SelectorList
 
 from pornhub.items import PornhubItem
+from pornhub.lib.convert_tool import converter
 
 
 class MyFollow(scrapy.Spider):
@@ -27,13 +27,13 @@ class MyFollow(scrapy.Spider):
             'taste_profile': '',
         }
         yield scrapy.FormRequest(
-            url='https://cn.pornhub.com/front/authenticate', formdata=body, callback=self.parse_subscription
+            url='https://www.pornhub.com/front/authenticate', formdata=body, callback=self.parse_subscription
         )
 
     def parse_subscription(self, response: HtmlResponse, **kwargs: Any):
         if response.json().get('success') == '1':
             yield scrapy.Request(
-                'https://cn.pornhub.com/users/daiqiangbudainiu/subscriptions', callback=self.start_parse
+                'https://www.pornhub.com/users/daiqiangbudainiu/subscriptions', callback=self.start_parse
             )
 
     def start_parse(self, response: HtmlResponse, **kwargs: Any):
@@ -84,9 +84,8 @@ class MyFollow(scrapy.Spider):
                 yield scrapy.Request(response.urljoin(next_url), callback=self.porn_star_page, priority=10)
 
     def video_page(self, response: HtmlResponse, **kwargs: Any):
-        start = time.perf_counter_ns()
         # some video has "Watch Full Video" button, ignore now
-        video_title = response.css('h1.title').css('span::text').get()
+        video_title = converter.convert(response.css('h1.title').css('span::text').get())
         video_channel = response.css('div.userInfo').css('a::text').get()
         self.logger.info('get model: %s, title: %s', video_channel, video_title)
         player_id_element = response.css('div#player')
@@ -98,7 +97,6 @@ class MyFollow(scrapy.Spider):
             .strip()
         )
         exec_js = '{0}\nflashvars_{1};'.format(prepare_js, player_id_element.css('::attr(data-video-id)').get())
-        middle = time.perf_counter_ns()
         video_info_list = js2py.eval_js(exec_js).to_dict().get('mediaDefinitions')
         # make sure dict structure {quality:'1080'}
         highest_quality = sorted(
