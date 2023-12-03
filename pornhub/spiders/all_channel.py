@@ -54,8 +54,9 @@ class AllChannel(scrapy.Spider):
 
     def video_page(self, response: HtmlResponse):
         video_title = response.css('h1.title').css('span::text').get()
-        video_channel = response.css('div.video-actions-container').css('div.usernameWrap.clearfix').css(
-            'a::text').get()
+        video_channel = (
+            response.css('div.video-actions-container').css('div.usernameWrap.clearfix').css('a::text').get()
+        )
         js = response.css('div.video-wrapper').css('#player').css('script').get()
         data_video_id = response.css('div.video-wrapper').css('#player::attr(data-video-id)').get()
         prepare_js = js.split('<script type="text/javascript">')[1].split('loadScriptUniqueId')[0]

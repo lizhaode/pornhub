@@ -2,8 +2,15 @@ import random
 
 
 def proxy_headers() -> str:
-    return str(random.randint(0, 255)) + '.' + str(random.randint(0, 255)) + '.' + str(
-        random.randint(0, 255)) + '.' + str(random.randint(0, 255))
+    return (
+        str(random.randint(0, 255))
+        + '.'
+        + str(random.randint(0, 255))
+        + '.'
+        + str(random.randint(0, 255))
+        + '.'
+        + str(random.randint(0, 255))
+    )
 
 
 def random_other_headers() -> list:
@@ -11,7 +18,7 @@ def random_other_headers() -> list:
     headers = [
         'User-Agent: {0}'.format(random.choice(UA_LIST)),
         'X-Forwarded-For: {0}'.format(ip),
-        'REMOTE_ADDR: {0}'.format(ip)
+        'REMOTE_ADDR: {0}'.format(ip),
     ]
     return headers
 
@@ -213,5 +220,5 @@ UA_LIST = [
     "Mozilla/5.0 (Windows; U; Windows NT 6.0; fr-FR) AppleWebKit/533.18.1 (KHTML, like Gecko) Version/5.0.2 Safari/533.18.5",
     "Mozilla/5.0 (Windows; U; Windows NT 5.1; zh-TW) AppleWebKit/533.19.4 (KHTML, like Gecko) Version/5.0.2 Safari/533.18.5",
     "Mozilla/5.0 (Windows; U; Windows NT 5.1; ru-RU) AppleWebKit/533.18.1 (KHTML, like Gecko) Version/5.0.2 Safari/533.18.5",
-    "Mozilla/5.0 (Macintosh; U; Intel Mac OS X 10_5_8; zh-cn) AppleWebKit/533.18.1 (KHTML, like Gecko) Version/5.0.2 Safari/533.18.5"
+    "Mozilla/5.0 (Macintosh; U; Intel Mac OS X 10_5_8; zh-cn) AppleWebKit/533.18.1 (KHTML, like Gecko) Version/5.0.2 Safari/533.18.5",
 ]

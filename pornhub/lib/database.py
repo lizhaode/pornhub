@@ -2,10 +2,10 @@ import pymysql
 
 
 class DataBase:
-
     def __init__(self, host, port, user, password):
-        self.connect = pymysql.connect(host=host, port=port, user=user, password=password, db='pornhub',
-                                       charset='utf8mb4')
+        self.connect = pymysql.connect(
+            host=host, port=port, user=user, password=password, db='pornhub', charset='utf8mb4'
+        )
         self.cursor = self.connect.cursor(pymysql.cursors.DictCursor)
 
     def select_all_by_title_channel(self, title: str) -> tuple:

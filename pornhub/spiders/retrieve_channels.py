@@ -1,6 +1,7 @@
+import os
+
 import scrapy
 from scrapy.http.response.html import HtmlResponse
-import os
 
 
 class Channel(scrapy.Spider):
