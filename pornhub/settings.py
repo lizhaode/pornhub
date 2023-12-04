@@ -18,19 +18,10 @@ LOG_FORMAT = '%(asctime)s %(levelname)s --- [%(name)s-%(threadName)s] %(message)
 LOG_SHORT_NAMES = True
 
 FILES_STORE = 'videos'
-
 PATH_PREFIX = ''
-CHANNEL_NUMBER = 1
-MODEL_FILTER_LIST = ['nana_taipei']
 
-PORN_USER = ''
-PORN_PWD = ''
-
-ENABLE_SQL = False
-HOST = ''
-PORT = 3306
-USER = 'root'
-PASSWORD = ''
+MODEL_LIST = []
+PORN_STAR_LIST = []
 
 # Crawl responsibly by identifying yourself (and your website) on the user-agent
 USER_AGENT = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36'
