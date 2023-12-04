@@ -5,7 +5,6 @@ from scrapy.http.response.html import HtmlResponse
 from scrapy.selector import SelectorList
 
 from pornhub.items import PornhubItem
-from pornhub.lib.database import DataBase
 
 
 class AllChannel(scrapy.Spider):
@@ -13,7 +12,6 @@ class AllChannel(scrapy.Spider):
 
     def __init__(self, name=None, **kwargs):
         super().__init__(name, **kwargs)
-        self.data_base = DataBase()
 
     def start_requests(self):
         channel_number = self.settings.get('CHANNEL_NUMBER')

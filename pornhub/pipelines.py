@@ -7,7 +7,6 @@ import shlex
 import subprocess
 
 from pornhub.items import PornhubItem
-
 from pornhub.spiders.all_channel import AllChannel
 
 
