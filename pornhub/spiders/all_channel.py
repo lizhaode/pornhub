@@ -1,75 +1,67 @@
-import js2py
+import json
+from typing import Any
+
 import scrapy
-from scrapy.exceptions import NotSupported
 from scrapy.http.response.html import HtmlResponse
 from scrapy.selector import SelectorList
+from zhconv import convert
 
 from pornhub.items import PornhubItem
 
 
 class AllChannel(scrapy.Spider):
-    name = 'all'
-
-    def __init__(self, name=None, **kwargs):
-        super().__init__(name, **kwargs)
+    name = 'channel'
 
     def start_requests(self):
-        channel_number = self.settings.get('CHANNEL_NUMBER')
-        channel_list = []
-        base_url = 'https://www.pornhubpremium.com/channels/{0}/videos?o=ra'
-        with open('channel.txt') as f:
-            for channel in f:
-                channel = channel.strip()
-                if channel != '':
-                    channel_list.append(channel)
-        # check CHANNEL_NUMBER is smaller than list length
-        if isinstance(channel_number, int) and len(channel_list) < channel_number:
-            raise NotSupported('CHANNEL_NUMBER config is bigger than website channel list')
+        for channel in self.settings.get('CHANNEL_LIST'):
+            yield scrapy.Request(f'https://www.pornhub.com/channels/{channel}')
 
-        if channel_number == 'ALL':
-            for i in channel_list:
-                yield scrapy.Request(base_url.format(i))
-        else:
-            for i in range(channel_number):
-                yield scrapy.Request(base_url.format(channel_list[i]))
-
-    def parse(self, response: HtmlResponse):
-        videos_list = response.css('ul.videos.row-5-thumbs.videosGridWrapper')
-        video_css = videos_list.css('span.title')
-        for item in video_css:  # type: SelectorList
+    def parse(self, response: HtmlResponse, **kwargs: Any):
+        videos_list = response.css('ul.videos.row-5-thumbs.videosGridWrapper').css('span.title')
+        for item in videos_list:  # type: SelectorList
             video_sub_link = item.css('a::attr(href)').get()
             video_url = response.urljoin(video_sub_link)
-            title = item.css('a::text').get()
+            title = item.css('a::text').get().strip()
             self.logger.info('send [%s] to parse real video', title)
             yield scrapy.Request(video_url, callback=self.video_page, priority=100)
 
         # determine has next page
-        next_page_li = response.css('li.page_next')
-        if next_page_li:
-            next_page_sub_link = next_page_li.css('a::attr(href)').get()
-            next_page_url = response.urljoin(next_page_sub_link)
-            yield scrapy.Request(next_page_url)
+        next_page = response.css('li.page_next')
+        if next_page:
+            next_page_sub_link = next_page.css('a::attr(href)').get()
+            yield scrapy.Request(response.urljoin(next_page_sub_link))
 
-    def video_page(self, response: HtmlResponse):
-        video_title = response.css('h1.title').css('span::text').get()
-        video_channel = (
-            response.css('div.video-actions-container').css('div.usernameWrap.clearfix').css('a::text').get()
+    def video_page(self, response: HtmlResponse, **kwargs: Any):
+        # some video has "Watch Full Video" button, ignore now
+        video_title = convert(response.css('span.inlineFree::text').get(), 'zh-cn')
+        print(video_title)
+        video_channel = response.css('div.userInfo').css('a::text').get()
+        self.logger.info('get channel: %s, title: %s', video_channel, video_title)
+        media_definitions = json.loads(
+            '{' + response.css('div#player').css('script::text').get().strip().splitlines()[0].strip(';').split(' {')[1]
+        ).get('mediaDefinitions')
+
+        # extract mp4 format
+        yield scrapy.Request(
+            [i.get('videoUrl') for i in media_definitions if i.get('format') == 'mp4'][0],
+            dont_filter=True,
+            cb_kwargs={'file_name': video_title, 'file_channel': video_channel, 'parent_url': response.url},
+            callback=self.send_to_pipeline,
         )
-        js = response.css('div.video-wrapper').css('#player').css('script').get()
-        data_video_id = response.css('div.video-wrapper').css('#player::attr(data-video-id)').get()
-        prepare_js = js.split('<script type="text/javascript">')[1].split('loadScriptUniqueId')[0]
-        exec_js = '{0}\nqualityItems_{1};'.format(prepare_js, data_video_id)
-        js_result = js2py.eval_js(exec_js)  # type: js2py.base.JsObjectWrapper
-        quality_items = js_result.to_list()  # type: list
-        quality = quality_items[-1]['text'].split('p')[0]
-        if int(quality) >= 720:
-            video_url = quality_items[-1]['url']
-            self.logger.info('parse [%s] success, url: %s', video_title, video_url)
-            if self.settings.get('ENABLE_SQL'):
-                result = self.data_base.select_all_by_title_my_follow(video_title)
-                if len(result) != 0:
-                    for line in result:
-                        self.logger.error('has duplicate record: %s', line)
-                else:
-                    self.data_base.save_my_follow(video_title, video_channel, video_url, response.url)
-            yield PornhubItem(file_urls=video_url, file_name=video_title, file_channel=video_channel)
+
+    def send_to_pipeline(self, response: HtmlResponse, **kwargs: Any):
+        highest_quality = sorted(
+            response.json(),
+            key=lambda x: int(x.get('quality')),
+            reverse=True,
+        )[0]
+        if int(highest_quality.get('quality')) >= 720:
+            yield PornhubItem(
+                file_urls=highest_quality.get('videoUrl'),
+                file_name=response.cb_kwargs.get('file_name'),
+                file_channel=response.cb_kwargs.get('file_channel'),
+                parent_url=response.cb_kwargs.get('parent_url'),
+            )
+
+        else:
+            self.logger.warning('quality low, not download title: %s', response.cb_kwargs.get('file_name'))
