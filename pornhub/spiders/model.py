@@ -1,6 +1,6 @@
+import json
 from typing import Any
 
-import js2py
 import scrapy
 from scrapy.http.response.html import HtmlResponse
 from scrapy.selector import SelectorList
@@ -34,20 +34,13 @@ class MyFollow(scrapy.Spider):
         video_title = convert(response.css('h1.title').css('span::text').get(), 'zh-cn')
         video_channel = response.css('div.userInfo').css('a::text').get()
         self.logger.info('get model: %s, title: %s', video_channel, video_title)
-        player_id_element = response.css('div#player')
-        prepare_js = (
-            player_id_element.css('script')
-            .get()
-            .split('<script type="text/javascript">')[1]
-            .split('playerObjList')[0]
-            .strip()
-        )
-        exec_js = '{0}\nflashvars_{1};'.format(prepare_js, player_id_element.css('::attr(data-video-id)').get())
-        video_info_list = js2py.eval_js(exec_js).to_dict().get('mediaDefinitions')
+        media_definitions = json.loads(
+            '{' + response.css('div#player').css('script::text').get().strip().splitlines()[0].strip(';').split(' {')[1]
+        ).get('mediaDefinitions')
+
         # extract mp4 format
-        mp4_info = next(filter(lambda x: x.get('format') == 'mp4', video_info_list))
         yield scrapy.Request(
-            mp4_info.get('videoUrl'),
+            [i.get('videoUrl') for i in media_definitions if i.get('format') == 'mp4'][0],
             dont_filter=True,
             cb_kwargs={'file_name': video_title, 'file_channel': video_channel, 'parent_url': response.url},
             callback=self.send_to_pipeline,

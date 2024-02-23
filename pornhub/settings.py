@@ -73,10 +73,7 @@ DEFAULT_REQUEST_HEADERS = {
 
 # Configure item pipelines
 # See https://docs.scrapy.org/en/latest/topics/item-pipeline.html
-ITEM_PIPELINES = {
-    'pornhub.pipelines.PornhubPipeline': 300,
-    # 'pornhub.pipelines.SaveDBPipeline': 200
-}
+ITEM_PIPELINES = {'pornhub.pipelines.PornhubPipeline': 300}
 
 # Enable and configure the AutoThrottle extension (disabled by default)
 # See https://docs.scrapy.org/en/latest/topics/autothrottle.html

@@ -1,3 +1,2 @@
 scrapy
-js2py
 zhconv

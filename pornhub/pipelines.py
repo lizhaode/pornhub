@@ -25,15 +25,6 @@ class PornhubPipeline(object):
         final_store_path = os.path.join(
             spider.settings.get('PATH_PREFIX'), spider.settings.get('FILES_STORE'), item.get('file_channel')
         )
-        if not os.path.exists(final_store_path):
-            spider.logger.info('create folder %s', final_store_path)
-            os.makedirs(final_store_path)
-
-        # TODO check md5, decide copy or ignore,avoid repeat merge
-        final_mp4_full_path = os.path.join(final_store_path, file_name)
-        if os.path.exists(final_mp4_full_path):
-            spider.logger.warning('file exists, item: %s', item)
-            return item
 
         spider.logger.info('start to download, item is: %s', item)
         subprocess.run(
