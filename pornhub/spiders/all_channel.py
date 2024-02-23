@@ -34,7 +34,6 @@ class AllChannel(scrapy.Spider):
     def video_page(self, response: HtmlResponse, **kwargs: Any):
         # some video has "Watch Full Video" button, ignore now
         video_title = convert(response.css('span.inlineFree::text').get(), 'zh-cn')
-        print(video_title)
         video_channel = response.css('div.userInfo').css('a::text').get()
         self.logger.info('get channel: %s, title: %s', video_channel, video_title)
         media_definitions = json.loads(
