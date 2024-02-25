@@ -28,7 +28,7 @@ class PornhubPipeline(object):
 
         spider.logger.info('start to download, item is: %s', item)
         subprocess.run(
-            shlex.split(f'aria2c "{item.get("file_urls")}" -x 3 -d {final_store_path} -o "{file_name}"'),
+            shlex.split(f'aria2c "{item.get("file_urls")}" -x 3 -d "{final_store_path}" -o "{file_name}"'),
             check=True,
             capture_output=True,
         )
